@@ -1650,6 +1650,8 @@ void Shutdown ()
 
 		sphShutdownWordforms ();
 		sphShutdownGlobalIDFs ();
+
+        cftShutdown(); //clean up
 	}
 
 	ARRAY_FOREACH ( i, g_dListeners )
@@ -20385,6 +20387,20 @@ int WINAPI ServiceMain ( int argc, char **argv )
 		sphFatal ( "'searchd' config section not found in '%s'", g_sConfigFile.cstr () );
 
 	const CSphConfigSection & hSearchdpre = hConf["searchd"]["searchd"];
+
+    /////////////////////
+    // init python layer
+    ////////////////////
+    if ( hConf("python") && hConf["python"]("python") )
+    {
+        CSphConfigSection & hPython = hConf["python"]["python"];
+#if USE_PYTHON
+        if(!cftInitialize(hPython))
+            sphDie ( "Python layer's initiation failed.");
+#else
+        sphDie ( "Python layer defined, but search does Not supports python. used --enable-python to recompile.");
+#endif
+    }
 
 	////////////////////////
 	// stop running searchd

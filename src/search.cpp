@@ -200,6 +200,20 @@ int main ( int argc, char ** argv )
 	CSphConfig & hConf = cp.m_tConf;
 	sphLoadConfig ( sOptConfig, false, cp );
 
+    /////////////////////
+    // init python layer
+    ////////////////////
+    if ( hConf("python") && hConf["python"]("python") )
+    {
+        CSphConfigSection & hPython = hConf["python"]["python"];
+#if USE_PYTHON
+        if(!cftInitialize(hPython))
+            sphDie ( "Python layer's initiation failed.");
+#else
+        sphDie ( "Python layer defined, but search does Not supports python. used --enable-python to recompile.");
+#endif
+    }
+
 	/////////////////////
 	// search each index
 	/////////////////////
@@ -484,6 +498,7 @@ int main ( int argc, char ** argv )
 	}
 
 	sphShutdownWordforms ();
+    cftShutdown(); //clean up
 }
 
 //

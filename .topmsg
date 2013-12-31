@@ -1,6 +1,6 @@
 From: nzinfo <li.monan@gmail.com>
 Subject: [PATCH] t/python
 
-<patch description>
+The python features's base -> import the python section; init python env
 
 Signed-off-by: nzinfo <li.monan@gmail.com>

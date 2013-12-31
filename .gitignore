@@ -61,5 +61,5 @@ config/compile
 # build file
 *.o
 *.a
-
+.deps
 
