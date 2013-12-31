@@ -38,6 +38,7 @@
 /src/search
 /src/searchd
 /src/spelldump
+/src/wordbreaker
 /src/tests
 /src/Makefile
 /src/.deps
@@ -46,3 +47,17 @@
 # /win/
 /win/*.user
 /win/*.filters
+
+# generated file
+config/config.h.in
+aclocal.m4
+autom4te.cache/
+Makefile
+Makefile.in
+configure
+
+# build file
+*.o
+*.a
+
+
