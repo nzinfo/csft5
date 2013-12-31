@@ -23,6 +23,8 @@
 #include <errno.h>
 #include <signal.h>
 
+#include "py_layer.h"
+
 #if USE_WINDOWS
 	#define snprintf	_snprintf
 

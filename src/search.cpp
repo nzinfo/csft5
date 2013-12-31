@@ -18,6 +18,7 @@
 #include "sphinxint.h"
 #include <time.h>
 
+#include "py_layer.h"
 
 #define CONF_CHECK(_hash,_key,_msg,_add) \
 	if (!( _hash.Exists ( _key ) )) \

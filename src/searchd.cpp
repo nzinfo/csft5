@@ -20,6 +20,7 @@
 #include "sphinxint.h"
 #include "sphinxquery.h"
 #include "sphinxjson.h"
+#include "py_layer.h"
 
 extern "C"
 {

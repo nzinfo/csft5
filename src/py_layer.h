@@ -17,9 +17,11 @@
 
 #endif //USE_PYTHON_DEBUG
 
+#include "sphinx.h"
+
 //////////////////////////////////////////////////////////////////////////
 
-bool			cftInitialize();
+bool			cftInitialize(const CSphConfigSection & hPython);
 void			cftShutdown();
 
 #endif
