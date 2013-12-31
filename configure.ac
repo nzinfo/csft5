@@ -3,13 +3,17 @@ dnl Process this file with autoconf to produce a configure script.
 AC_PREREQ(2.59)
 AC_INIT([sphinx], [2.1.5-dev], [shodan(at)sphinxsearch.com])
 
+m4_include([python.m4])
+
 dnl --------------------------------------------------------------------------
 
 SPHINX_CONFIGURE_PART([checking build environment])
 
 AC_CONFIG_AUX_DIR([config])
-AM_INIT_AUTOMAKE([-Wall -Werror foreign])
+AM_INIT_AUTOMAKE([subdir-objects -Wall -Werror foreign])
 AM_MAINTAINER_MODE
+AM_PATH_PYTHON
+AM_PROG_AR
 AC_CONFIG_SRCDIR([src/searchd.cpp])
 AC_CONFIG_HEADER([config/config.h])
 
@@ -57,7 +61,11 @@ AC_PROG_CC
 AC_PROG_CXX
 AC_PROG_RANLIB
 
+dnl Checks for embedded interpretors.
+INN_ARG_PYTHON
+
 AC_COMPILE_IFELSE([
+AC_LANG_SOURCE([
 #ifdef __GNUC__
 #if __GNUC__ > 3 || (__GNUC__ == 3 && __GNUC_MINOR__ > 3)
 int main() {}
@@ -65,6 +73,7 @@ int main() {}
 syntax error
 #endif
 #endif
+])
 ], [], [AC_MSG_ERROR([Gcc version error. Minspec is 3.4])])
 
 AC_DEFINE_UNQUOTED([COMPILER],"$CC `$CC -dumpversion`",[Define to be the name of the compiler.])
@@ -398,6 +407,10 @@ dnl ---
 # we can now set preprocessor flags for both C and C++ compilers
 CPPFLAGS="$CPPFLAGS $MYSQL_CFLAGS $PGSQL_CFLAGS $LIBSTEMMER_CFLAGS"
 
+dnl ---
+AM_CONDITIONAL(USE_PYTHON, test x"$USE_PYTHON" = xDO)
+CPPFLAGS="$CPPFLAGS $PYTHON_CPPFLAGS"
+LIBS="$LIBS $PYTHON_LIBS"
 
 AC_ARG_WITH([libexpat],
 	AC_HELP_STRING([--with-libexpat], [compile with expat XML library suppport (default is autodetect)]),
