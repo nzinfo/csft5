@@ -43,6 +43,11 @@ const char * myctime ( DWORD uStamp )
 
 int main ( int argc, char ** argv )
 {
+    // fix search cli.
+    char cTopOfMainStack;
+    sphThreadInit();
+    MemorizeStack ( &cTopOfMainStack );
+
 	fprintf ( stdout, SPHINX_BANNER );
 	if ( argc<=1 )
 	{

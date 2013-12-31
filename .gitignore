@@ -57,10 +57,13 @@ Makefile.in
 configure
 config/ar-lib
 config/compile
+pytest/idx/
 
 # build file
 *.o
 *.a
+*.pyc
 .deps
+*.user
 
 
