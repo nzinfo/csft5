@@ -496,8 +496,9 @@ static KeyDesc_t g_dKeysSearchd[] =
 static KeyDesc_t g_dKeysPython[] =
 {
     { "path",	KEY_LIST, NULL },
-    { "python_home",	0, NULL },
+    { "python_home",	0, NULL },  // do NOT use this configure entry.
     { "__debug_object_class",	0, NULL },
+    { "config_class",	0, NULL },  // 提供配置数据的 Python 类
     { NULL,						0, NULL }
 };
 
@@ -1483,7 +1484,15 @@ const char * sphLoadConfig ( const char * sOptConfig, bool bQuiet, CSphConfigPar
 		sphDie ( "failed to parse config file '%s'", sOptConfig );
 
 	CSphConfig & hConf = cp.m_tConf;
-	if ( !hConf ( "index" ) )
+    // process python config layer.
+#if USE_PYTHON
+    if ( hConf ( "python" ) )
+    {
+
+    }
+#endif
+
+    if ( !hConf ( "index" ) )
 		sphDie ( "no indexes found in config file '%s'", sOptConfig );
 
 	return sOptConfig;
