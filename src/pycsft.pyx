@@ -43,4 +43,24 @@ cdef public api cpy_ref.PyObject* __getPythonClassByName(const char* class_name)
     else:
         return NULL
 
+"""
+    Import C++ Interface
+"""
+
+"""
+    Define Python Wrap, for Python side.
+"""
+
+"""
+    Define Python Wrap , for CPP side.
+"""
+
+"""
+    Python Object's C API
+"""
+
+"""
+    Object creation function.
+"""
+
 #end of file
