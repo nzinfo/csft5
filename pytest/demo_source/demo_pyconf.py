@@ -24,7 +24,7 @@ class DemoPyConf(object):
 			    charset_type        = utf-8
 			}
 		"""
-		#conf.addSection('index', 'xml2')
+		conf.addSection('index', 'xml2')
 		props = {
 			"source": "xml",
 			"path": "idx/xml2",
