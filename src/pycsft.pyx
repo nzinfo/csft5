@@ -11,6 +11,7 @@ import os
         Python 配置服务
         Python Cache 的 C++ <-> Python 的调用接口
 """
+# Ref: http://stackoverflow.com/questions/1176136/convert-string-to-python-class-object
 def __findPythonClass(sName):
     import importlib
     pos = sName.find('.')
