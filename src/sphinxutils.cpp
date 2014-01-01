@@ -492,6 +492,13 @@ static KeyDesc_t g_dKeysSearchd[] =
 	{ NULL,						0, NULL }
 };
 
+// -coreseek -pysource
+static KeyDesc_t g_dKeysPython[] =
+{
+    { "path",	KEY_LIST, NULL },
+    { NULL,						0, NULL }
+};
+
 //////////////////////////////////////////////////////////////////////////
 
 CSphConfigParser::CSphConfigParser ()
@@ -506,6 +513,7 @@ bool CSphConfigParser::IsPlainSection ( const char * sKey )
 	if ( !strcasecmp ( sKey, "indexer" ) )		return true;
 	if ( !strcasecmp ( sKey, "searchd" ) )		return true;
 	if ( !strcasecmp ( sKey, "search" ) )		return true;
+    if ( !strcasecmp ( sKey, "python" ) )		return true; //-coreseek -pysource
 	return false;
 }
 
@@ -579,6 +587,7 @@ bool CSphConfigParser::ValidateKey ( const char * sKey )
 	else if ( m_sSectionType=="index" )		pDesc = g_dKeysIndex;
 	else if ( m_sSectionType=="indexer" )	pDesc = g_dKeysIndexer;
 	else if ( m_sSectionType=="searchd" )	pDesc = g_dKeysSearchd;
+    else if ( m_sSectionType=="python" )	pDesc = g_dKeysPython;      // -coreseek -pysource
 	if ( !pDesc )
 	{
 		snprintf ( m_sError, sizeof(m_sError), "unknown section type '%s'", m_sSectionType.cstr() );
@@ -901,7 +910,7 @@ bool CSphConfigParser::Parse ( const char * sFileName, const char * pBuffer )
 				continue;
 			}
 			if ( IsNamedSection(sToken) )	{ m_sSectionType = sToken; sToken[0] = '\0'; LOC_POP (); LOC_PUSH ( S_SECNAME ); LOC_BACK(); continue; }
-											LOC_ERROR2 ( "invalid section type '%s'", sToken );
+                                            LOC_ERROR2 ( "invalid section type '%s'", sToken );
 		}
 
 		// handle S_CHR state
