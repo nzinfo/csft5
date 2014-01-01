@@ -55,3 +55,5 @@ src/yysphinxquery.c
 src/yysphinxquery.h
 src/yysphinxselect.c
 src/yysphinxselect.h
+src/pyiface.h
+src/pyiface.cpp
