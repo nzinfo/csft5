@@ -4,7 +4,7 @@ SRC_SPHINX = sphinx.cpp sphinxexcerpt.cpp sphinxquery.cpp \
 	sphinxsearch.cpp sphinxrt.cpp sphinxjson.cpp sphinxudf.c sphinxaot.cpp
 
 if USE_PYTHON
-SRC_PYTHONLAYER = py_layer.cpp  
+SRC_PYTHONLAYER = py_layer.cpp pycsft.cxx
 endif
 
 noinst_LIBRARIES = libsphinx.a
@@ -21,10 +21,13 @@ indextool_SOURCES = indextool.cpp
 tests_SOURCES = tests.cpp
 wordbreaker_SOURCES = wordbreaker.cpp
 
-BUILT_SOURCES = extract-version
+BUILT_SOURCES = extract-version pycsft.cxx
 .PHONY: extract-version
 extract-version:
 	/bin/sh svnxrev.sh ..
+
+pycsft.cxx: pycsft.pyx
+	@cython pycsft.pyx --cplus -o pycsft.cxx
 
 
 AM_CPPFLAGS = $(LIBRE2_CFLAGS) -DSYSCONFDIR="\"$(sysconfdir)\"" -DDATADIR="\"$(localstatedir)/data\""

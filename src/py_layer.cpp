@@ -7,6 +7,7 @@
 #include "sphinxutils.h"
 
 #include "py_layer.h"
+#include "pycsft.h"
 
 #if USE_PYTHON
 
@@ -25,32 +26,22 @@
 
 // Manual write config reciever -> I'd NOT wanna took time on sip's linking..
 #define RET_PYNONE	{ Py_INCREF(Py_None); return Py_None; }
-#if USE_PYTHON
-
-int init_python_layer_helpers()
-{
-    int nRet = 0;
-    nRet = PyRun_SimpleString("import sys\nimport os\n");
-    if(nRet) return nRet;
-    //helper function to append path to env.
-    nRet = PyRun_SimpleString("\n\
-def __coreseek_set_python_path(sPath):\n\
-    sPaths = [x.lower() for x in sys.path]\n\
-    sPath = os.path.abspath(sPath)\n\
-    if sPath not in sPaths:\n\
-        sys.path.append(sPath)\n\
-    #print sPaths\n\
-\n");
-    if(nRet) return nRet;
-    return nRet;
-}
-
-#endif
 
 // init & deinit
 bool	cftInitialize( const CSphConfigSection & hPython)
 {
 #if USE_PYTHON
+    // set PYTHONHOME
+    if( hPython("python_home") )
+    {
+         //Py_NoSiteFlag = 1; //FIXME: add this line avoid site-packate not found.
+         CSphString python_home = hPython.GetStr ( "python_home" );
+         printf("python home = %s\n", Py_GetPythonHome());
+         Py_SetPythonHome((char*)python_home.cstr());
+    }
+    CSphString progName = "csft";
+    Py_SetProgramName((char*)progName.cstr());
+
     if (!Py_IsInitialized()) {
         Py_Initialize();
         //PyEval_InitThreads();
@@ -58,34 +49,27 @@ bool	cftInitialize( const CSphConfigSection & hPython)
         if (!Py_IsInitialized()) {
             return false;
         }
+        // init extension.
+        initpycsft();
     }
-    init_python_layer_helpers();
-    // FIXME: change to cython version.
-    //init paths
-    PyObject * main_module = NULL;
+
+    // init paths
     {
 
         CSphVector<CSphString>	m_dPyPaths;
         LOC_GETAS(hPython, m_dPyPaths, "path");
         ///XXX: append system pre-defined path here.
+        ARRAY_FOREACH ( i, m_dPyPaths )
         {
-            main_module = PyImport_AddModule("__main__");  //+1
-            //init paths
-            PyObject* pFunc = PyObject_GetAttrString(main_module, "__coreseek_set_python_path");
-
-            if(pFunc && PyCallable_Check(pFunc)){
-                ARRAY_FOREACH ( i, m_dPyPaths )
-                {
-                    PyObject* pArgsKey  = Py_BuildValue("(s)",m_dPyPaths[i].cstr() );
-                    PyObject* pResult = PyEval_CallObject(pFunc, pArgsKey);
-                    Py_XDECREF(pArgsKey);
-                    Py_XDECREF(pResult);
-                }
-            } // end if
-            if (pFunc)
-                Py_XDECREF(pFunc);
-            //Py_XDECREF(main_module); //no needs to decrease refer to __main__ module, else will got a crash!
+           __setPythonPath( m_dPyPaths[i].cstr() );
         }
+    }
+    // check the demo[debug] object creation.
+    if( hPython("__debug_object_class") )
+    {
+        CSphString demoClassName = hPython.GetStr ( "__debug_object_class" );
+        PyObject* m_pTypeObj = __getPythonClassByName(demoClassName.cstr());
+        printf("The python type object's address %p .\n", m_pTypeObj);
     }
     return true;
 #endif

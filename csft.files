@@ -28,6 +28,9 @@ src/sphinxsort.cpp
 src/sphinxsoundex.cpp
 src/sphinxstd.cpp
 src/sphinxstd.h
+src/py_layer.cpp
+src/py_layer.h
+src/pycsft.pyx
 src/sphinxstem.h
 src/sphinxstemar.cpp
 src/sphinxstemcz.cpp

@@ -66,4 +66,8 @@ pytest/idx/
 .deps
 *.user
 
+# Cython generate file.
+src/pycsft.cxx
+src/pycsft.h
+src/pycsft_api.h
 
