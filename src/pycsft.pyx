@@ -47,20 +47,73 @@ cdef public api cpy_ref.PyObject* __getPythonClassByName(const char* class_name)
     Import C++ Interface
 """
 
+## --- python conf ---
+
+## --- python source ---
+
+## --- python tokenizer ---
+
+## --- python cache ---
+
+## --- python query ---
+
 """
     Define Python Wrap, for Python side.
 """
+
+## --- python conf ---
+
+## --- python source ---
+
+## --- python tokenizer ---
+
+## --- python cache ---
+
+## --- python query ---
 
 """
     Define Python Wrap , for CPP side.
 """
 
+## --- python conf ---
+
+## --- python source ---
+
+## --- python tokenizer ---
+
+## --- python cache ---
+
+## --- python query ---
+
+
 """
     Python Object's C API
 """
 
+## --- python conf ---
+
+## --- python source ---
+
+## --- python tokenizer ---
+
+## --- python cache ---
+
+## --- python query ---
+
+
 """
     Object creation function.
 """
+
+## --- python conf ---
+
+## --- python source ---
+
+## --- python tokenizer ---
+
+## --- python cache ---
+
+## --- python query ---
+
 
 #end of file
