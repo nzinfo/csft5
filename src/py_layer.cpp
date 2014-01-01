@@ -31,6 +31,17 @@
 bool	cftInitialize( const CSphConfigSection & hPython)
 {
 #if USE_PYTHON
+    // set PYTHONHOME
+    if( hPython("python_home") )
+    {
+         //Py_NoSiteFlag = 1; //FIXME: add this line avoid site-packate not found.
+         CSphString python_home = hPython.GetStr ( "python_home" );
+         printf("python home = %s\n", Py_GetPythonHome());
+         Py_SetPythonHome((char*)python_home.cstr());
+    }
+    CSphString progName = "csft";
+    Py_SetProgramName((char*)progName.cstr());
+
     if (!Py_IsInitialized()) {
         Py_Initialize();
         //PyEval_InitThreads();
@@ -54,8 +65,11 @@ bool	cftInitialize( const CSphConfigSection & hPython)
         }
     }
     // check the demo[debug] object creation.
+    if( hPython("__debug_object_class") )
     {
         CSphString demoClassName = hPython.GetStr ( "__debug_object_class" );
+        PyObject* m_pTypeObj = __getPythonClassByName(demoClassName.cstr());
+        printf("The python type object's address %p .\n", m_pTypeObj);
     }
     return true;
 #endif

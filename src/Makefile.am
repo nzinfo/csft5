@@ -21,13 +21,14 @@ indextool_SOURCES = indextool.cpp
 tests_SOURCES = tests.cpp
 wordbreaker_SOURCES = wordbreaker.cpp
 
-BUILT_SOURCES = extract-version
+BUILT_SOURCES = extract-version pycsft.cxx
 .PHONY: extract-version
 extract-version:
 	/bin/sh svnxrev.sh ..
 
 pycsft.cxx: pycsft.pyx
 	@cython pycsft.pyx --cplus -o pycsft.cxx
+
 
 AM_CPPFLAGS = $(LIBRE2_CFLAGS) -DSYSCONFDIR="\"$(sysconfdir)\"" -DDATADIR="\"$(localstatedir)/data\""
 COMMON_LIBS = libsphinx.a $(LIBSTEMMER_LIBS) $(MYSQL_LIBS) $(PGSQL_LIBS) $(LIBRE2_LIBS)

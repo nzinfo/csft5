@@ -496,6 +496,8 @@ static KeyDesc_t g_dKeysSearchd[] =
 static KeyDesc_t g_dKeysPython[] =
 {
     { "path",	KEY_LIST, NULL },
+    { "python_home",	0, NULL },
+    { "__debug_object_class",	0, NULL },
     { NULL,						0, NULL }
 };
 
