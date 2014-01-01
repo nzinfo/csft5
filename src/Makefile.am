@@ -4,7 +4,7 @@ SRC_SPHINX = sphinx.cpp sphinxexcerpt.cpp sphinxquery.cpp \
 	sphinxsearch.cpp sphinxrt.cpp sphinxjson.cpp sphinxudf.c sphinxaot.cpp
 
 if USE_PYTHON
-SRC_PYTHONLAYER = py_layer.cpp pycsft.cxx
+SRC_PYTHONLAYER = py_layer.cpp pyiface.cpp pycsft.cxx
 endif
 
 noinst_LIBRARIES = libsphinx.a

@@ -226,6 +226,9 @@ const char * DoBacktrace ( int iDepth=0, int iSkip=0 );
 
 void sphCheckDuplicatePaths ( const CSphConfig & hConf );
 
+/// helper functions.
+char * trim ( char * sLine );
+
 #endif // _sphinxutils_
 
 //

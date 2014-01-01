@@ -37,6 +37,10 @@
 #include <glob.h>
 #endif
 
+#include "py_layer.h"
+#include "pyiface.h"
+#include "pycsft.h"
+
 //////////////////////////////////////////////////////////////////////////
 // STRING FUNCTIONS
 //////////////////////////////////////////////////////////////////////////
@@ -59,7 +63,7 @@ static char * rtrim ( char * sLine )
 }
 
 
-static char * trim ( char * sLine )
+char * trim ( char * sLine )
 {
 	return ltrim ( rtrim ( sLine ) );
 }
@@ -537,7 +541,7 @@ bool CSphConfigParser::AddSection ( const char * sType, const char * sName )
 	if ( !m_tConf.Exists ( m_sSectionType ) )
 		m_tConf.Add ( CSphConfigType(), m_sSectionType ); // FIXME! be paranoid, verify that it returned true
 
-	if ( m_tConf[m_sSectionType].Exists ( m_sSectionName ) )
+    if ( m_tConf[m_sSectionType].Exists ( m_sSectionName ) )
 	{
 		snprintf ( m_sError, sizeof(m_sError), "section '%s' (type='%s') already exists", sName, sType );
 		return false;
@@ -1485,12 +1489,29 @@ const char * sphLoadConfig ( const char * sOptConfig, bool bQuiet, CSphConfigPar
 
 	CSphConfig & hConf = cp.m_tConf;
     // process python config layer.
-#if USE_PYTHON
-    if ( hConf ( "python" ) )
+    if ( hConf("python") && hConf["python"]("python") )
     {
+#if USE_PYTHON
+        CSphConfigSection & hPython = hConf["python"]["python"];
+        // as we supported pyconf, need init python layer here. -> leave origin init code along, it doesn't h
+        if(!cftInitialize(hPython))
+            sphDie ( "Python layer's initiation failed.");
 
-    }
+        if( hPython("config_class") ) {
+            CSphString config_class = hPython.GetStr ( "config_class" );
+            IConfProvider* pyconf = createPythonConfObject(config_class.cstr());
+            if(!pyconf)
+                 sphDie ( "Python configure layer's initiation failed.");
+            // call process.
+            int nRet = pyconf->process(hConf);
+            if(nRet != 0) {
+                // error happen.
+            }
+        }
+#else
+        sphDie ( "Python layer defined, but indexer does Not supports python. used --enable-python to recompile.");
 #endif
+    }
 
     if ( !hConf ( "index" ) )
 		sphDie ( "no indexes found in config file '%s'", sOptConfig );

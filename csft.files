@@ -57,3 +57,4 @@ src/yysphinxselect.c
 src/yysphinxselect.h
 src/pyiface.h
 src/pyiface.cpp
+SPEC.coreseek/PythonConfig.spec

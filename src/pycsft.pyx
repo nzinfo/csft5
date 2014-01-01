@@ -3,6 +3,7 @@
 cimport pycsft
 cimport cpython.ref as cpy_ref
 import os
+from libcpp cimport bool
 
 """
     定义
@@ -11,6 +12,52 @@ import os
         Python 配置服务
         Python Cache 的 C++ <-> Python 的调用接口
 """
+
+"""
+    Import C++ Define.
+"""
+cdef extern from "pyiface.h":
+    cpdef cppclass PySphConfig:
+        bool hasSection(const char* sType, const char* sName)
+        bool addSection(const char* sType, const char* sName)
+        bool addKey(const char* sType, const char* sName, const char* sKey, char* sValue)
+
+    cdef cppclass IConfProvider:
+        pass
+
+    cdef cppclass ConfProviderWrap:
+        #PyObject *obj
+        ConfProviderWrap(cpy_ref.PyObject *obj)
+
+"""
+    Wrap the python code interface
+    -> after import c++ class, we needs build python wrap... silly.
+"""
+cdef class PySphConfigWrap(object):
+    cdef PySphConfig* conf_
+    def __init__(self):
+        self.conf_ = NULL
+
+    cdef init_wrap(self, PySphConfig* conf):
+        self.conf_ = conf
+
+    # FIXME: should raise an exception.
+    def hasSection(self, sType, sName):
+        if self.conf_:
+            return self.conf_.hasSection(sType, sName)
+        return False
+
+    def addSection(self, sType, sName):
+        if self.conf_:
+            return self.conf_.addSection(sType, sName)
+        return False
+
+    # if not section section, just return false.
+    def addKey(self, sType, sName, sKey, sValue):
+        if self.conf_:
+            return self.conf_.addKey(sType, sName, sKey, sValue)
+        return False
+
 # Ref: http://stackoverflow.com/questions/1176136/convert-string-to-python-class-object
 def __findPythonClass(sName):
     import importlib
@@ -25,7 +72,32 @@ def __findPythonClass(sName):
         print e
         return None
 
+"""
+    Cython Interface Class
+"""
+cdef class PyConfProviderWrap:
+    cdef ConfProviderWrap* _p
+    cdef cpy_ref.PyObject* _pyconf
+    def __init__(self, pyConfObj):
+        self._pyconf = <cpy_ref.PyObject*>pyConfObj # the user customed config object.
+        self._p = new ConfProviderWrap(<cpy_ref.PyObject*>self)
+
+    cdef int process(self, PySphConfig & hConf):
+        cdef int nRet = 0
+        _pyconf = <object>self._pyconf
+        hConfwrap = PySphConfigWrap(); hConfwrap.init_wrap(&hConf)
+        nRet = _pyconf.process(hConfwrap)
+        if nRet == None:
+            return 0
+        return int(nRet)
+
+# CAPI Interface
+cdef public int py_iconfprovider_process(void *ptr, PySphConfig& hConf):
+    cdef PyConfProviderWrap self = <PyConfProviderWrap>(ptr)
+    return self.process(hConf)
+
 # Cython creator API
+# 设置类库的加载路径
 cdef public api void __setPythonPath(const char* sPath):
     import sys
     sPaths = [x.lower() for x in sys.path]
@@ -34,13 +106,27 @@ cdef public api void __setPythonPath(const char* sPath):
         sys.path.append(sPath_)
     #print __findPythonClass('flask.Flask')
 
+# 根据类的名称 加载 Python 的 类型对象
 cdef public api cpy_ref.PyObject* __getPythonClassByName(const char* class_name):
     import sys
     sName = class_name
     clsType = __findPythonClass(sName)
     if clsType:
-        return ( <cpy_ref.PyObject*>clsType)
+        return ( <cpy_ref.PyObject*>clsType )
     else:
         return NULL
+
+# appliction originted API function
+# create new config layer.
+cdef public api IConfProvider* createPythonConfObject(const char* class_name):
+    cdef PyConfProviderWrap pyconf
+    sName = class_name
+    clsType = __findPythonClass(sName)
+    if clsType:
+        obj = clsType()
+        pyconf = PyConfProviderWrap(obj)
+        return <IConfProvider*>(pyconf._p)
+    else:
+        return NULL # provider not found.
 
 #end of file

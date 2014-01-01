@@ -7,6 +7,7 @@
 #include "sphinxutils.h"
 
 #include "py_layer.h"
+#include "pyiface.h"
 #include "pycsft.h"
 
 #if USE_PYTHON

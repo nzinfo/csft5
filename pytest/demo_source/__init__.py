@@ -1,4 +1,5 @@
 from demo import Test
+from demo_pyconf import DemoPyConf
 
 class Test11(object):
 	"""docstring for ClassName"""
