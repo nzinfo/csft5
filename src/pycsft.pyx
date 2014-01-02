@@ -5,6 +5,7 @@ cimport cpython.ref as cpy_ref
 import os
 from libcpp cimport bool
 from libc.stdint cimport uint32_t
+import traceback
 
 """
     定义
@@ -140,9 +141,8 @@ cdef class PySourceWrap(object):
     def __init__(self, pysrc):
         self._pysource = <cpy_ref.PyObject*>pysrc
 
-    def hello(self):
-        #print 'aaaa'
-        pass
+    #def hello(self):
+    #    pass
 
 ## --- python tokenizer ---
 
@@ -200,7 +200,6 @@ cdef public int py_source_setup(void *ptr, const CSphConfigSection & hSource):
         for k in keys:
             print k, getCRC32(k, len(k))
     #print conf_items
-    print self.hello()
 
 # - [Renamed] GetSchema -> buildSchema
 #cdef public int py_source_build_schema(void *ptr, PySphConfig& hConf):
@@ -261,7 +260,13 @@ cdef public api CSphSource * createPythonDataSourceObject ( const char* sName, c
     sName = class_name
     clsType = __findPythonClass(sName)
     if clsType:
-        obj = clsType()
+        # Do error report @user code.
+        try:
+            obj = clsType()
+        except Exception, ex:
+            traceback.print_exc()
+            return NULL
+
         wrap = PySourceWrap(obj)
         pySource = new CSphSource_Python2(sName, <cpy_ref.PyObject*>wrap)
         return <CSphSource*>pySource
