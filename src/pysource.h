@@ -7,7 +7,8 @@
 class CSphSource_Python2 : public CSphSource_Document
 {
 public:
-            CSphSource_Python2 ( const char * sName );
+
+            CSphSource_Python2 ( const char * sName, PyObject *obj);
             ~CSphSource_Python2 ();
     bool	Setup ( const CSphConfigSection & hSource);
 

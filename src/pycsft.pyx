@@ -99,7 +99,7 @@ cdef extern from "pyiface.h":
 
 cdef extern from "pysource.h":
     cdef cppclass CSphSource_Python2:
-        pass
+        CSphSource_Python2 ( const char * sName, cpy_ref.PyObject* obj)
 
 ## --- python tokenizer ---
 
@@ -114,6 +114,35 @@ cdef extern from "pysource.h":
 ## --- python conf ---
 
 ## --- python source ---
+cdef class PySchemaWrap(object):
+    """
+        用于向 Python 端 提供操作 Schema 的接口
+    """
+    def __init__(self):
+        pass
+
+    def addAttribute(const char* sName, const char* sType, int iBitSize, bool bJoin, bool bIsSet):
+        """
+            向实际的 Schema 中增加 新字段
+        """
+        pass
+
+    def addField(const char* sName, bool bJoin):
+        """
+            向 Schema 添加全文检索字段
+        """
+        pass
+
+
+cdef class PySourceWrap(object):
+    cdef cpy_ref.PyObject* _pysource
+
+    def __init__(self, pysrc):
+        self._pysource = <cpy_ref.PyObject*>pysrc
+
+    def hello(self):
+        #print 'aaaa'
+        pass
 
 ## --- python tokenizer ---
 
@@ -149,6 +178,8 @@ cdef public int py_source_setup(void *ptr, const CSphConfigSection & hSource):
     cdef CSphStringList values
     cdef uint32_t value_count
 
+    cdef PySourceWrap self = <PySourceWrap>(ptr)
+
     conf_items = {}
     hSource.IterateStart()
     while hSource.IterateNext():
@@ -163,9 +194,13 @@ cdef public int py_source_setup(void *ptr, const CSphConfigSection & hSource):
         for i in range(0, values.GetLength()):
             v.append( values[i].cstr() )
         conf_items[key] = v
-
-    print conf_items
-    pass
+    # temp usage for crc32 key
+    if False:
+        keys = ["integer", "timestamp", "boolean", "float", "long", "string", "poly2d", "field", "json"]
+        for k in keys:
+            print k, getCRC32(k, len(k))
+    #print conf_items
+    print self.hello()
 
 # - [Renamed] GetSchema -> buildSchema
 #cdef public int py_source_build_schema(void *ptr, PySphConfig& hConf):
@@ -221,7 +256,17 @@ cdef public int py_source_get_kill_list(void *ptr):
 
 ## --- python source ---
 # pass source config infomation.
-#cdef public api CSphSource * createPythonDataSourceObject ( const CSphConfigSection & hSource, const char * sSourceName ):
+cdef public api CSphSource * createPythonDataSourceObject ( const char* sName, const char * class_name ):
+    cdef CSphSource_Python2* pySource
+    sName = class_name
+    clsType = __findPythonClass(sName)
+    if clsType:
+        obj = clsType()
+        wrap = PySourceWrap(obj)
+        pySource = new CSphSource_Python2(sName, <cpy_ref.PyObject*>wrap)
+        return <CSphSource*>pySource
+    else:
+        return NULL
 
 ## --- python tokenizer ---
 
