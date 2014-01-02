@@ -52,6 +52,11 @@ cdef public api cpy_ref.PyObject* __getPythonClassByName(const char* class_name)
 ## --- python conf ---
 
 ## --- python source ---
+
+cdef extern from "sphinxstd.h":
+    cdef cppclass CSphString:
+        const char * cstr () const
+
 cdef extern from "sphinx.h":
 
     cdef cppclass CSphColumnInfo:
@@ -78,10 +83,19 @@ cdef extern from "sphinx.h":
 
 cdef extern from "sphinxutils.h":
     cdef cppclass CSphConfigSection:
-        pass
+        void IterateStart () const
+        bool IterateStart ( const CSphString & tKey ) const
+        bool IterateNext () const
+        const CSphString & IterateGetKey () const
 
 cdef extern from "pyiface.h":
+    cdef cppclass CSphStringList:
+        int GetLength () const
+        void Reset ()
+        const CSphString & operator [] ( int iIndex ) const
+
     cdef uint32_t getCRC32(const char* data, size_t iLength)
+    uint32_t getConfigValues(const CSphConfigSection & hSource, const char* sKey, CSphStringList& value)
 
 cdef extern from "pysource.h":
     cdef cppclass CSphSource_Python2:
@@ -129,6 +143,30 @@ cdef extern from "pysource.h":
 ## --- python conf ---
 
 ## --- python source ---
+# 处理配置文件的读取, 读取 配置到  key -> value; key-> valuelist.
+cdef public int py_source_setup(void *ptr, const CSphConfigSection & hSource):
+    cdef const char* key
+    cdef CSphStringList values
+    cdef uint32_t value_count
+
+    conf_items = {}
+    hSource.IterateStart()
+    while hSource.IterateNext():
+        values.Reset()
+        key = hSource.IterateGetKey().cstr()
+        value_count = getConfigValues(hSource, key, values)
+
+        if value_count == 1:
+            conf_items[key] = values[0].cstr()
+            continue
+        v = []
+        for i in range(0, values.GetLength()):
+            v.append( values[i].cstr() )
+        conf_items[key] = v
+
+    print conf_items
+    pass
+
 # - [Renamed] GetSchema -> buildSchema
 #cdef public int py_source_build_schema(void *ptr, PySphConfig& hConf):
 #    pass

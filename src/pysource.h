@@ -1,6 +1,8 @@
 #ifndef PYSOURCE_H
 #define PYSOURCE_H
+
 #include "sphinx.h"
+#include "py_layer.h"
 
 class CSphSource_Python2 : public CSphSource_Document
 {
@@ -81,6 +83,8 @@ public:
 
 protected:
     CSphString		m_sError;
+
+    PyObject    * _obj;
 };
 
 #endif // PYSOURCE_H

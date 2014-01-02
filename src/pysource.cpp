@@ -1,4 +1,5 @@
 #include "pysource.h"
+#include "pycsft.h"
 
 CSphSource_Python2::CSphSource_Python2 ( const char * sName )
             : CSphSource_Document ( sName )
@@ -12,6 +13,7 @@ CSphSource_Python2::~CSphSource_Python2 ()
 }
 
 bool CSphSource_Python2::Setup ( const CSphConfigSection & hSource){
+    py_source_setup(NULL, hSource);
     return false;
 }
 
