@@ -5,16 +5,20 @@ CSphSource_Python2::CSphSource_Python2 ( const char * sName, PyObject *obj)
             : CSphSource_Document ( sName )
             , _obj(obj)
 {
-    // ...
+    // 检测 DocID 是否为 64bit 的
+    assert(sizeof(uint64_t) >= sizeof(SphDocID_t));
+
+    Py_INCREF(_obj);
 }
 
 CSphSource_Python2::~CSphSource_Python2 ()
 {
     // ...
+    Py_XDECREF(_obj);
 }
 
 bool CSphSource_Python2::Setup ( const CSphConfigSection & hSource){
-    py_source_setup(_obj, hSource);
+    py_source_setup(_obj, m_tSchema, hSource);
     return false;
 }
 

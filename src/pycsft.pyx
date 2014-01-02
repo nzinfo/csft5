@@ -2,9 +2,12 @@
 
 cimport pycsft
 cimport cpython.ref as cpy_ref
+from cpython.ref cimport Py_INCREF, Py_DECREF, Py_XDECREF
+from cpython.exc cimport PyErr_Fetch, PyErr_Restore
+
 import os
 from libcpp cimport bool
-from libc.stdint cimport uint32_t
+from libc.stdint cimport uint32_t, uint64_t
 import traceback
 
 """
@@ -59,6 +62,7 @@ cdef extern from "sphinxstd.h":
         const char * cstr () const
 
 cdef extern from "sphinx.h":
+    ctypedef SphDocID_t
 
     cdef cppclass CSphColumnInfo:
         #CSphColumnInfo ( const char * sName=NULL, ESphAttr eType=SPH_ATTR_NONE )
@@ -115,34 +119,64 @@ cdef extern from "pysource.h":
 ## --- python conf ---
 
 ## --- python source ---
+class InvalidAttributeType(Exception):
+    pass
+
 cdef class PySchemaWrap(object):
     """
         用于向 Python 端 提供操作 Schema 的接口
     """
     def __init__(self):
-        pass
+        self._valid_attribute_type = ["integer", "timestamp", "boolean", "float", "long", "string", "poly2d", "field", "json"]
 
-    def addAttribute(const char* sName, const char* sType, int iBitSize, bool bJoin, bool bIsSet):
+    cpdef addAttribute(self, const char* sName, const char* sType, int iBitSize, bool bJoin, bool bIsSet):
         """
             向实际的 Schema 中增加 新字段
+            @iBitSize <= 0, means standand size.
+
+            - check sType
         """
+        if sType not in self._valid_attribute_type:
+            raise InvalidAttributeType()
         pass
 
-    def addField(const char* sName, bool bJoin):
+    cpdef addField(self, const char* sName, bool bJoin):
         """
             向 Schema 添加全文检索字段
         """
         pass
 
+cdef class PyDocInfo(object):
+    """
+        供 Python 程序 设置 待检索文档的属性 和 全文检索字段
+    """
+    cpdef uint64_t getLastDocID(self): #FIXME: larger this when docid lager than 64bit.
+        return 0
+
+cdef class PyHitCollector(object):
+    """
+        为 Python 程序提供在索引建立阶段使用 的 Hit 采集接口, 可以手工设置 FieldIndex
+    """
 
 cdef class PySourceWrap(object):
-    cdef cpy_ref.PyObject* _pysource
+    """
+        C++ -> Python 的桥; 额外提供
+          - DocInfo 让 Python 修改 Document 的属性信息
+          - HitCollector 让 Python 可以主动推送索引
+    """
+    cdef object _pysource
 
     def __init__(self, pysrc):
-        self._pysource = <cpy_ref.PyObject*>pysrc
+        self._pysource = pysrc
 
-    #def hello(self):
-    #    pass
+    cdef bindSource(self, CSphSource_Python2* pSource):
+        """
+            绑定 DocInfo & HitCollector 到指定的 DataSource,
+        """
+
+    cpdef int setup(self, source_conf):
+        self._pysource.setup(None, source_conf)
+        return 0
 
 ## --- python tokenizer ---
 
@@ -173,7 +207,7 @@ cdef class PySourceWrap(object):
 
 ## --- python source ---
 # 处理配置文件的读取, 读取 配置到  key -> value; key-> valuelist.
-cdef public int py_source_setup(void *ptr, const CSphConfigSection & hSource):
+cdef public int py_source_setup(void *ptr, CSphSchema& Schema, const CSphConfigSection & hSource):
     cdef const char* key
     cdef CSphStringList values
     cdef uint32_t value_count
@@ -194,6 +228,13 @@ cdef public int py_source_setup(void *ptr, const CSphConfigSection & hSource):
         for i in range(0, values.GetLength()):
             v.append( values[i].cstr() )
         conf_items[key] = v
+
+    try:
+        return self.setup(conf_items)
+    except Exception, ex:
+        traceback.print_exc()
+        return -1 # setup failured.
+
     # temp usage for crc32 key
     if False:
         keys = ["integer", "timestamp", "boolean", "float", "long", "string", "poly2d", "field", "json"]
@@ -207,35 +248,35 @@ cdef public int py_source_setup(void *ptr, const CSphConfigSection & hSource):
 
 # - Connected
 cdef public int py_source_connected(void *ptr):
-    pass
+    cdef PySourceWrap self = <PySourceWrap>(ptr)
 
 # - OnIndexFinished
 cdef public int py_source_index_finished(void *ptr):
-    pass
+    cdef PySourceWrap self = <PySourceWrap>(ptr)
 
 # - OnBeforeIndex
 cdef public int py_source_before_index(void *ptr):
-    pass
+    cdef PySourceWrap self = <PySourceWrap>(ptr)
 
 # - GetDocField
 cdef public int py_source_get_join_field(void *ptr, const char* fieldname):
-    pass
+    cdef PySourceWrap self = <PySourceWrap>(ptr)
 
 # - GetMVAValue
 cdef public int py_source_get_join_mva(void *ptr, const char* fieldname):
-    pass
+    cdef PySourceWrap self = <PySourceWrap>(ptr)
 
 # - NextDocument
 cdef public int py_source_next(void *ptr):
-    pass
+    cdef PySourceWrap self = <PySourceWrap>(ptr)
 
 # - OnAfterIndex
 cdef public int py_source_after_index(void *ptr):
-    pass
+    cdef PySourceWrap self = <PySourceWrap>(ptr)
 
 # - GetKillList
 cdef public int py_source_get_kill_list(void *ptr):
-    pass
+    cdef PySourceWrap self = <PySourceWrap>(ptr)
 
 # - [Removed] GetFieldOrder -> 在 buildSchema 统一处理
 # - [Removed] BuildHits -> 有 TokenPolicy 模块处理
@@ -257,6 +298,7 @@ cdef public int py_source_get_kill_list(void *ptr):
 # pass source config infomation.
 cdef public api CSphSource * createPythonDataSourceObject ( const char* sName, const char * class_name ):
     cdef CSphSource_Python2* pySource
+
     sName = class_name
     clsType = __findPythonClass(sName)
     if clsType:
@@ -268,7 +310,11 @@ cdef public api CSphSource * createPythonDataSourceObject ( const char* sName, c
             return NULL
 
         wrap = PySourceWrap(obj)
+        #Py_INCREF(wrap) # pass pyobjct* to cpp code should addref ( @ the cpp code. )
+
         pySource = new CSphSource_Python2(sName, <cpy_ref.PyObject*>wrap)
+        # FIXME: crash when new failure.
+        wrap.bindSource(pySource);
         return <CSphSource*>pySource
     else:
         return NULL
