@@ -3,6 +3,8 @@
 cimport pycsft
 cimport cpython.ref as cpy_ref
 import os
+from libcpp cimport bool
+from libc.stdint cimport uint32_t
 
 """
     定义
@@ -50,6 +52,40 @@ cdef public api cpy_ref.PyObject* __getPythonClassByName(const char* class_name)
 ## --- python conf ---
 
 ## --- python source ---
+cdef extern from "sphinx.h":
+
+    cdef cppclass CSphColumnInfo:
+        #CSphColumnInfo ( const char * sName=NULL, ESphAttr eType=SPH_ATTR_NONE )
+        int     m_iIndex
+
+    cdef cppclass CSphSchema:
+        int	GetFieldIndex ( const char * sName ) const
+        int	GetAttrIndex ( const char * sName ) const
+
+        void	Reset ()
+        void    ResetAttrs ()
+        int	GetRowSize () const
+        int	GetStaticSize () const
+        int	GetDynamicSize () const
+        int	GetAttrsCount () const
+
+        const CSphColumnInfo &	GetAttr ( int iIndex ) const
+        const CSphColumnInfo *	GetAttr ( const char * sName ) const
+        void  AddAttr ( const CSphColumnInfo & tAttr, bool bDynamic )
+
+    cdef cppclass CSphSource:
+        pass
+
+cdef extern from "sphinxutils.h":
+    cdef cppclass CSphConfigSection:
+        pass
+
+cdef extern from "pyiface.h":
+    cdef uint32_t getCRC32(const char* data, size_t iLength)
+
+cdef extern from "pysource.h":
+    cdef cppclass CSphSource_Python2:
+        pass
 
 ## --- python tokenizer ---
 
@@ -93,6 +129,44 @@ cdef public api cpy_ref.PyObject* __getPythonClassByName(const char* class_name)
 ## --- python conf ---
 
 ## --- python source ---
+# - [Renamed] GetSchema -> buildSchema
+#cdef public int py_source_build_schema(void *ptr, PySphConfig& hConf):
+#    pass
+
+# - Connected
+cdef public int py_source_connected(void *ptr):
+    pass
+
+# - OnIndexFinished
+cdef public int py_source_index_finished(void *ptr):
+    pass
+
+# - OnBeforeIndex
+cdef public int py_source_before_index(void *ptr):
+    pass
+
+# - GetDocField
+cdef public int py_source_get_join_field(void *ptr, const char* fieldname):
+    pass
+
+# - GetMVAValue
+cdef public int py_source_get_join_mva(void *ptr, const char* fieldname):
+    pass
+
+# - NextDocument
+cdef public int py_source_next(void *ptr):
+    pass
+
+# - OnAfterIndex
+cdef public int py_source_after_index(void *ptr):
+    pass
+
+# - GetKillList
+cdef public int py_source_get_kill_list(void *ptr):
+    pass
+
+# - [Removed] GetFieldOrder -> 在 buildSchema 统一处理
+# - [Removed] BuildHits -> 有 TokenPolicy 模块处理
 
 ## --- python tokenizer ---
 
@@ -108,6 +182,8 @@ cdef public api cpy_ref.PyObject* __getPythonClassByName(const char* class_name)
 ## --- python conf ---
 
 ## --- python source ---
+# pass source config infomation.
+#cdef public api CSphSource * createPythonDataSourceObject ( const CSphConfigSection & hSource, const char * sSourceName ):
 
 ## --- python tokenizer ---
 

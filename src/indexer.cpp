@@ -24,6 +24,7 @@
 #include <signal.h>
 
 #include "py_layer.h"
+#include "pyiface.h"
 
 #if USE_WINDOWS
 	#define snprintf	_snprintf
@@ -836,6 +837,11 @@ CSphSource * SpawnSource ( const CSphConfigSection & hSource, const char * sSour
 
 	if ( hSource["type"]=="xmlpipe" || hSource["type"]=="xmlpipe2" )
 		return SpawnSourceXMLPipe ( hSource, sSourceName, bUTF8 );
+
+    #if USE_PYTHON
+        if ( hSource["type"]=="python")
+            return SpawnSourcePython ( hSource, sSourceName );
+    #endif
 
 	fprintf ( stdout, "ERROR: source '%s': unknown type '%s'; skipping.\n", sSourceName,
 		hSource["type"].cstr() );

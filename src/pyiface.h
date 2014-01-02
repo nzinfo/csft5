@@ -1,6 +1,8 @@
 #ifndef PYIFACECSFT_H
 #define PYIFACECSFT_H
 
+#include "sphinx.h"
+#include "sphinxutils.h"
 
 /*
  * 在 C++ 和 Python 层 中间, 提供一个适配层
@@ -16,7 +18,11 @@
 
 
 //------ Python Data Source Block -------
+void initColumnInfo(CSphColumnInfo& info, const char* sName, const char* sType);
+void setColumnBitCount(int iBitCount);
+uint32_t getCRC32(const char* data, size_t iLength);
 
+CSphSource * SpawnSourcePython ( const CSphConfigSection & hSource, const char * sSourceName);
 
 //------ Python Tokenizer Block -------
 
