@@ -63,6 +63,7 @@ cdef extern from "sphinxstd.h":
 
 cdef extern from "sphinx.h":
     ctypedef SphDocID_t
+    ctypedef SphAttr_t
 
     cdef cppclass CSphColumnInfo:
         #CSphColumnInfo ( const char * sName=NULL, ESphAttr eType=SPH_ATTR_NONE )
@@ -102,6 +103,11 @@ cdef extern from "pyiface.h":
     cdef uint32_t getCRC32(const char* data, size_t iLength)
     uint32_t getConfigValues(const CSphConfigSection & hSource, const char* sKey, CSphStringList& value)
 
+    void initColumnInfo(CSphColumnInfo& info, const char* sName, const char* sType)
+    void setColumnBitCount(CSphColumnInfo& info, int iBitCount)
+    void setColumnAsMVA(CSphColumnInfo& info, bool bJoin)
+    void addFieldColumn(CSphSchema* pSchema, CSphColumnInfo& info)
+
 cdef extern from "pysource.h":
     cdef cppclass CSphSource_Python2:
         CSphSource_Python2 ( const char * sName, cpy_ref.PyObject* obj)
@@ -128,9 +134,12 @@ cdef class PySchemaWrap(object):
     """
     cdef CSphSchema* _schema
     cdef object _valid_attribute_type # python list
+    cdef int iIndex
 
     def  __cinit__(self):
+        self._schema = NULL
         self._valid_attribute_type = ["integer", "timestamp", "boolean", "float", "long", "string", "poly2d", "field", "json"]
+        self.iIndex = 0
 
     cdef bind(self, CSphSchema* s):
         self._schema = s
@@ -142,15 +151,36 @@ cdef class PySchemaWrap(object):
 
             - check sType
         """
+        cdef CSphColumnInfo tCol
+
         if sType not in self._valid_attribute_type:
             raise InvalidAttributeType()
-        print sName, sType, iBitSize
+        if sType == str("field"):
+            raise InvalidAttributeType() # used addField plz.
+
+        initColumnInfo(tCol, sName, sType);
+        tCol.m_iIndex = self.iIndex
+        self.iIndex += 1
+        if iBitSize:
+            setColumnBitCount(tCol, iBitSize)
+        # Patch on MVA
+        if bIsSet:
+            setColumnAsMVA(tCol, bJoin)
+
+        self._schema.AddAttr(tCol, True)
+
 
     cpdef addField(self, const char* sName, bool bJoin=False):
         """
             向 Schema 添加全文检索字段
         """
-        pass
+        cdef CSphColumnInfo tCol
+
+        initColumnInfo(tCol, sName, NULL);
+        tCol.m_iIndex = self.iIndex
+        self.iIndex += 1
+        addFieldColumn(self._schema, tCol);
+
 
     cpdef int fieldsCount(self):
         return 0
@@ -164,10 +194,25 @@ cdef class PySchemaWrap(object):
     cpdef object attributeInfo(self, int iIndex):
         return None
 
+    cpdef int   getFieldIndex(self, const char* sKey):
+        return 0
+
+    cpdef int   getAttributeIndex(self, const char* sKey):
+        return 0
+
 cdef class PyDocInfo(object):
     """
         供 Python 程序 设置 待检索文档的属性 和 全文检索字段
     """
+    cpdef setDocID(self, uint64_t id):
+        pass
+
+    cpdef uint64_t getDocID(self):
+        return 0
+
+    cpdef int setAttr(self, int iIndex, SphAttr_t uValue):
+        return 0
+
     cpdef uint64_t getLastDocID(self): #FIXME: larger this when docid lager than 64bit.
         return 0
 
@@ -175,6 +220,13 @@ cdef class PyHitCollector(object):
     """
         为 Python 程序提供在索引建立阶段使用 的 Hit 采集接口, 可以手工设置 FieldIndex
     """
+    cpdef uint64_t getPrevDocID(self):
+        return 0
+
+    cpdef uint64_t getDocID(self):
+        return 0
+
+
 
 cdef class PySourceWrap(object):
     """

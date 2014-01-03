@@ -30,7 +30,9 @@ bool CSphSource_Python2::Connect ( CSphString & sError ) {
 
 /// disconnect from the source
 void CSphSource_Python2::Disconnect () {
-
+    m_tSchema.Reset ();
+    m_tHits.m_dData.Reset();
+    // notify python ?
 }
 
 /// check if there are any attributes configured

@@ -35,7 +35,7 @@ typedef enum columnType_ {
     ECT_POLY2D      = 754820778,
     ECT_FIELD       = 1542800728,
     ECT_JSON        = 1795630405,
-    ECT_NONT        = 0
+    ECT_NONE        = 0
 } columnType;
 
 void initColumnInfo(CSphColumnInfo& info, const char* sName, const char* sType){
@@ -56,14 +56,33 @@ void initColumnInfo(CSphColumnInfo& info, const char* sName, const char* sType){
     case ECT_JSON: info.m_eAttrType = SPH_ATTR_JSON; break;
 
     case ECT_FIELD:
-    case ECT_NONT:
+    case ECT_NONE:
     default:
         info.m_eAttrType = SPH_ATTR_NONE; break;
     };
 }
 
-void setColumnBitCount(CSphColumnInfo& info, int iBitCount){
-    info.m_tLocator.m_iBitCount = iBitCount;
+void setColumnBitCount(CSphColumnInfo& tCol, int iBitCount){
+    tCol.m_tLocator.m_iBitCount = iBitCount;
+}
+
+void setColumnAsMVA(CSphColumnInfo& tCol, bool bJoin) {
+    if(tCol.m_eAttrType == SPH_ATTR_INTEGER) {
+        tCol.m_eAttrType = SPH_ATTR_UINT32SET;
+        tCol.m_eSrc = (bJoin) ? SPH_ATTRSRC_QUERY:SPH_ATTRSRC_FIELD;
+    }
+
+    if(tCol.m_eAttrType == SPH_ATTR_BIGINT) {
+        tCol.m_eAttrType = SPH_ATTR_INT64SET;
+        tCol.m_eSrc = (bJoin) ? SPH_ATTRSRC_QUERY:SPH_ATTRSRC_FIELD;
+    }
+}
+
+void addFieldColumn(CSphSchema* pSchema, CSphColumnInfo& tCol)
+{
+    if(pSchema){
+        pSchema->m_dFields.Add(tCol);
+    }
 }
 
 uint32_t getCRC32(const char* data, size_t iLength)
