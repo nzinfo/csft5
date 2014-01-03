@@ -24,6 +24,7 @@ void initColumnInfo(CSphColumnInfo& info, const char* sName, const char* sType);
 void setColumnBitCount(CSphColumnInfo& info, int iBitCount);
 void setColumnAsMVA(CSphColumnInfo& info, bool bJoin);
 void addFieldColumn(CSphSchema* pSchema, CSphColumnInfo& info);
+int  getSchemaFieldCount(CSphSchema* pSchema);
 
 uint32_t getCRC32(const char* data, size_t iLength);
 

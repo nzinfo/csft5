@@ -107,6 +107,7 @@ cdef extern from "pyiface.h":
     void setColumnBitCount(CSphColumnInfo& info, int iBitCount)
     void setColumnAsMVA(CSphColumnInfo& info, bool bJoin)
     void addFieldColumn(CSphSchema* pSchema, CSphColumnInfo& info)
+    int  getSchemaFieldCount(CSphSchema* pSchema)
 
 cdef extern from "pysource.h":
     cdef cppclass CSphSource_Python2:
@@ -143,6 +144,7 @@ cdef class PySchemaWrap(object):
 
     cdef bind(self, CSphSchema* s):
         self._schema = s
+
 
     cpdef addAttribute(self, const char* sName, const char* sType, int iBitSize=0, bool bJoin=False, bool bIsSet=False):
         """
@@ -183,10 +185,10 @@ cdef class PySchemaWrap(object):
 
 
     cpdef int fieldsCount(self):
-        return 0
+        return getSchemaFieldCount(self._schema)
 
     cpdef int attributeCount(self):
-        return 0
+        return self._schema.GetAttrsCount()
 
     cpdef object fieldsInfo(self, int iIndex):
         return None
@@ -195,10 +197,10 @@ cdef class PySchemaWrap(object):
         return None
 
     cpdef int   getFieldIndex(self, const char* sKey):
-        return 0
+        return self._schema.GetFieldIndex(sKey)
 
     cpdef int   getAttributeIndex(self, const char* sKey):
-        return 0
+        return self._schema.GetAttrIndex(sKey)
 
 cdef class PyDocInfo(object):
     """

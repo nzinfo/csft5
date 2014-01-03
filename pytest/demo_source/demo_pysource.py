@@ -23,7 +23,8 @@ class TestSource(object):
 		schema.addField("body")
 
 		schema.addField("comments", bJoin = True)		
-		print schema, source_conf
+		#print schema, source_conf
+		print schema.fieldsCount(), schema.attributeCount()
 		return False
 
 	"""

@@ -85,6 +85,14 @@ void addFieldColumn(CSphSchema* pSchema, CSphColumnInfo& tCol)
     }
 }
 
+int  getSchemaFieldCount(CSphSchema* pSchema)
+{
+    if(pSchema){
+        return pSchema->m_dFields.GetLength();
+    }
+    return 0;
+}
+
 uint32_t getCRC32(const char* data, size_t iLength)
 {
     return sphCRC32((const BYTE*)data, iLength);
