@@ -17,6 +17,12 @@ class TestSource(object):
 		"""
 		schema.addAttribute("create_at", "timestamp", 0, False, False)
 		schema.addAttribute("tag", "integer", 0, False, True)
+		schema.addAttribute("bigtag", "long", bIsSet = True)
+
+		schema.addField("title")		
+		schema.addField("body")
+
+		schema.addField("comments", bJoin = True)		
 		print schema, source_conf
 		return False
 

@@ -126,10 +126,16 @@ cdef class PySchemaWrap(object):
     """
         用于向 Python 端 提供操作 Schema 的接口
     """
-    def __init__(self):
+    cdef CSphSchema* _schema
+    cdef object _valid_attribute_type # python list
+
+    def  __cinit__(self):
         self._valid_attribute_type = ["integer", "timestamp", "boolean", "float", "long", "string", "poly2d", "field", "json"]
 
-    cpdef addAttribute(self, const char* sName, const char* sType, int iBitSize, bool bJoin, bool bIsSet):
+    cdef bind(self, CSphSchema* s):
+        self._schema = s
+
+    cpdef addAttribute(self, const char* sName, const char* sType, int iBitSize=0, bool bJoin=False, bool bIsSet=False):
         """
             向实际的 Schema 中增加 新字段
             @iBitSize <= 0, means standand size.
@@ -138,13 +144,25 @@ cdef class PySchemaWrap(object):
         """
         if sType not in self._valid_attribute_type:
             raise InvalidAttributeType()
-        pass
+        print sName, sType, iBitSize
 
-    cpdef addField(self, const char* sName, bool bJoin):
+    cpdef addField(self, const char* sName, bool bJoin=False):
         """
             向 Schema 添加全文检索字段
         """
         pass
+
+    cpdef int fieldsCount(self):
+        return 0
+
+    cpdef int attributeCount(self):
+        return 0
+
+    cpdef object fieldsInfo(self, int iIndex):
+        return None
+
+    cpdef object attributeInfo(self, int iIndex):
+        return None
 
 cdef class PyDocInfo(object):
     """
@@ -174,8 +192,8 @@ cdef class PySourceWrap(object):
             绑定 DocInfo & HitCollector 到指定的 DataSource,
         """
 
-    cpdef int setup(self, source_conf):
-        self._pysource.setup(None, source_conf)
+    cpdef int setup(self, schema, source_conf):
+        self._pysource.setup(schema, source_conf)
         return 0
 
 ## --- python tokenizer ---
@@ -229,8 +247,11 @@ cdef public int py_source_setup(void *ptr, CSphSchema& Schema, const CSphConfigS
             v.append( values[i].cstr() )
         conf_items[key] = v
 
+    pySchema = PySchemaWrap()
+    pySchema.bind(&Schema)
+
     try:
-        return self.setup(conf_items)
+        return self.setup(pySchema, conf_items)
     except Exception, ex:
         traceback.print_exc()
         return -1 # setup failured.
