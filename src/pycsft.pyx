@@ -65,9 +65,29 @@ cdef extern from "sphinx.h":
     ctypedef SphDocID_t
     ctypedef SphAttr_t
 
+    ctypedef enum ESphAttr:
+        SPH_ATTR_NONE
+        SPH_ATTR_INTEGER
+        SPH_ATTR_TIMESTAMP
+        SPH_ATTR_ORDINAL
+        SPH_ATTR_BOOL
+        SPH_ATTR_FLOAT
+        SPH_ATTR_BIGINT
+        SPH_ATTR_STRING
+        SPH_ATTR_WORDCOUNT
+        SPH_ATTR_POLY2D
+        SPH_ATTR_STRINGPTR
+        SPH_ATTR_TOKENCOUNT
+        SPH_ATTR_JSON
+        SPH_ATTR_UINT32SET
+        SPH_ATTR_INT64SET
+
     cdef cppclass CSphColumnInfo:
         #CSphColumnInfo ( const char * sName=NULL, ESphAttr eType=SPH_ATTR_NONE )
-        int     m_iIndex
+        CSphString  m_sName
+        ESphAttr    m_eAttrType
+        bool        m_bIndexed
+        int         m_iIndex
 
     cdef cppclass CSphSchema:
         int	GetFieldIndex ( const char * sName ) const
@@ -105,9 +125,11 @@ cdef extern from "pyiface.h":
 
     void initColumnInfo(CSphColumnInfo& info, const char* sName, const char* sType)
     void setColumnBitCount(CSphColumnInfo& info, int iBitCount)
+    int  getColumnBitCount(CSphColumnInfo& info)
     void setColumnAsMVA(CSphColumnInfo& info, bool bJoin)
     void addFieldColumn(CSphSchema* pSchema, CSphColumnInfo& info)
     int  getSchemaFieldCount(CSphSchema* pSchema)
+    CSphColumnInfo* getSchemaField(CSphSchema* pSchema, int iIndex)
 
 cdef extern from "pysource.h":
     cdef cppclass CSphSource_Python2:
@@ -141,6 +163,29 @@ cdef class PySchemaWrap(object):
         self._schema = NULL
         self._valid_attribute_type = ["integer", "timestamp", "boolean", "float", "long", "string", "poly2d", "field", "json"]
         self.iIndex = 0
+
+    cdef sphColumnInfoTypeToString(self, CSphColumnInfo& tCol):
+        type2str = {
+            SPH_ATTR_NONE:"none",
+            SPH_ATTR_INTEGER:"integer",
+            SPH_ATTR_TIMESTAMP:"timestamp",
+            SPH_ATTR_ORDINAL:"str2ord",
+            SPH_ATTR_BOOL:"boolean",
+            SPH_ATTR_FLOAT:"float",
+            SPH_ATTR_BIGINT:"long",
+            SPH_ATTR_STRING:"string",
+            SPH_ATTR_WORDCOUNT:"wordcount",
+            SPH_ATTR_POLY2D:"poly2d",
+            SPH_ATTR_STRINGPTR:"stringPtr",
+            SPH_ATTR_TOKENCOUNT:"tokencount",
+            SPH_ATTR_JSON:"json",
+            SPH_ATTR_UINT32SET:"mva32",
+            SPH_ATTR_INT64SET:"mva64",
+        }
+        if tCol.m_eAttrType in type2str:
+            return type2str[tCol.m_eAttrType]
+
+        return "unknown"
 
     cdef bind(self, CSphSchema* s):
         self._schema = s
@@ -177,12 +222,10 @@ cdef class PySchemaWrap(object):
             向 Schema 添加全文检索字段
         """
         cdef CSphColumnInfo tCol
-
         initColumnInfo(tCol, sName, NULL);
-        tCol.m_iIndex = self.iIndex
-        self.iIndex += 1
+        # int	m_iIndex;  ///< index into source result set (-1 for joined fields)
+        # no needs set m_iIndex, refer: CSphSource_XMLPipe2
         addFieldColumn(self._schema, tCol);
-
 
     cpdef int fieldsCount(self):
         return getSchemaFieldCount(self._schema)
@@ -191,9 +234,25 @@ cdef class PySchemaWrap(object):
         return self._schema.GetAttrsCount()
 
     cpdef object fieldsInfo(self, int iIndex):
+        cdef CSphColumnInfo* tCol
+        tCol = getSchemaField(self._schema, iIndex)
+        if tCol:
+            # FIXME: add wordpart info.
+            return {
+                "name":tCol.m_sName.cstr(),
+            }
         return None
 
     cpdef object attributeInfo(self, int iIndex):
+        cdef CSphColumnInfo tCol
+        if iIndex>= 0 and iIndex <= self.attributeCount():
+            tCol = self._schema.GetAttr(iIndex)
+            return {
+                "name":tCol.m_sName.cstr(),
+                "type":self.sphColumnInfoTypeToString(tCol),
+                "index":tCol.m_iIndex,
+                "bit": getColumnBitCount(tCol)
+            }
         return None
 
     cpdef int   getFieldIndex(self, const char* sKey):

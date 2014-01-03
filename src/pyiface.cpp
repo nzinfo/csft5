@@ -66,6 +66,10 @@ void setColumnBitCount(CSphColumnInfo& tCol, int iBitCount){
     tCol.m_tLocator.m_iBitCount = iBitCount;
 }
 
+int  getColumnBitCount(CSphColumnInfo& tCol) {
+    return tCol.m_tLocator.m_iBitCount;
+}
+
 void setColumnAsMVA(CSphColumnInfo& tCol, bool bJoin) {
     if(tCol.m_eAttrType == SPH_ATTR_INTEGER) {
         tCol.m_eAttrType = SPH_ATTR_UINT32SET;
@@ -83,6 +87,14 @@ void addFieldColumn(CSphSchema* pSchema, CSphColumnInfo& tCol)
     if(pSchema){
         pSchema->m_dFields.Add(tCol);
     }
+}
+
+CSphColumnInfo* getSchemaField(CSphSchema* pSchema, int iIndex){
+    if(pSchema){
+        if(iIndex>=0 && iIndex<pSchema->m_dFields.GetLength())
+            return &(pSchema->m_dFields[iIndex]);
+    }
+    return NULL;
 }
 
 int  getSchemaFieldCount(CSphSchema* pSchema)

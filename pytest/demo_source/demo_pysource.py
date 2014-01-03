@@ -25,6 +25,7 @@ class TestSource(object):
 		schema.addField("comments", bJoin = True)		
 		#print schema, source_conf
 		print schema.fieldsCount(), schema.attributeCount()
+		print schema.fieldsInfo(1), schema.attributeInfo(1)
 		return False
 
 	"""
@@ -40,7 +41,8 @@ class TestSource(object):
 			@return  False | Has Exception -> 停止采集
 		"""
 
-	def feedJoinField(self, fieldname, docinfo, hit_collector):
+	def feedJoinField(self, docinfo, hit_collector):
+		# fieldname => the code knows which is the joint field. -> IterateJoinedHits
 		pass
 
 	def feedMultiValueAttribute(self, fieldname, docinfo, hit_collector):

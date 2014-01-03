@@ -22,9 +22,11 @@ typedef CSphVector<CSphString> CSphStringList;
 
 void initColumnInfo(CSphColumnInfo& info, const char* sName, const char* sType);
 void setColumnBitCount(CSphColumnInfo& info, int iBitCount);
+int  getColumnBitCount(CSphColumnInfo& info);
 void setColumnAsMVA(CSphColumnInfo& info, bool bJoin);
 void addFieldColumn(CSphSchema* pSchema, CSphColumnInfo& info);
 int  getSchemaFieldCount(CSphSchema* pSchema);
+CSphColumnInfo* getSchemaField(CSphSchema* pSchema, int iIndex);
 
 uint32_t getCRC32(const char* data, size_t iLength);
 
