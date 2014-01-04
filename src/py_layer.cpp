@@ -43,7 +43,7 @@ bool	cftInitialize( const CSphConfigSection & hPython)
     Py_SetProgramName((char*)progName.cstr());
 
     if (!Py_IsInitialized()) {
-        Py_Initialize();
+        Py_InitializeEx(0);
         //PyEval_InitThreads();
 
         if (!Py_IsInitialized()) {
