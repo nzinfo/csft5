@@ -87,7 +87,15 @@ bool CSphSource_Python2::IterateStart ( CSphString & sError ) {
 #if PYSOURCE_DEBUG
     fprintf(stderr, "[DEBUG][PYSOURCE] IterateStart .\n");
 #endif
-    return false;
+    // call before index
+    if(py_source_before_index(_obj) != 0)
+        return false;
+
+    // check has join field  fields -> m_baseFields , m_joinFields ?
+
+    // check fieldMVA , embed multi-value attribute. m_dAttrToFieldMVA ?
+
+    return true;
 }
 
 /// get next document

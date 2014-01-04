@@ -318,7 +318,8 @@ cdef class PySourceWrap(object):
 
     cpdef int setup(self, schema, source_conf):
         try:
-            if self._pysource.setup(schema, source_conf):
+            ret = self._pysource.setup(schema, source_conf)
+            if ret or ret == None:
                 #check obj has necessary method.
                 return 0
         except Exception, ex:
@@ -357,7 +358,8 @@ cdef class PySourceWrap(object):
         # optinal call back.
         if attr_callable(self._pysource, 'beforeIndex'):
             try:
-                if self._pysource.beforeIndex():
+                ret = self._pysource.beforeIndex()
+                if ret or ret == None: # treat None as True
                     return 0
                 else:
                     return -2
