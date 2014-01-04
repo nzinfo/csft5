@@ -101,7 +101,7 @@ class TestSource(object):
 			#print self.attr2id, self.attr2id["bigtag"] , type(self.attr2id["bigtag"])
 			docinfo.setAttrTimestamp( self.attr2id["create_at"], time.time() + doc['id']);
 			docinfo.setAttrInt64(self.attr2id["oid"], doc['oid'])
-			docinfo.setAttrMulti(self.attr2id["bigtag"], doc['bigtag'])
+			docinfo.setAttrMulti(self.attr2id["bigtag"], doc['bigtag']) #be care!
 			docinfo.setAttrString(self.attr2id["title"], doc['title'])
 
 			docinfo.setField(self.field2id["title"], doc['title'])
