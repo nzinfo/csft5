@@ -1,5 +1,12 @@
 # -*- coding: UTF-8 -*-
 
+documents = [
+	{
+		'id':100,
+		'oid': 1000000
+	}
+]
+
 class TestSource(object):
 	"""测试使用的 Python 数据源"""
 	def __init__(self):
@@ -17,7 +24,7 @@ class TestSource(object):
 			@source_conf 	Dictionary
 		"""
 		schema.addAttribute("create_at", "timestamp", 0, False, False)
-		schema.addAttribute("tag", "integer", 0, False, True)
+		schema.addAttribute("tag", "integer", 0, bJoin=True, bIsSet=True)
 		schema.addAttribute("oid", "long")
 		print schema.addAttribute("bigtag", "long", bIsSet = True)
 
@@ -39,6 +46,7 @@ class TestSource(object):
 
 	"""
 		想索引 提供数据
+		 buildhit has limit , no more than #define MAX_SOURCE_HITS	32768
 	"""
 	def feed(self, docinfo, hit_collector):
 		"""

@@ -67,8 +67,8 @@ bool CSphSource_Python2::Connect ( CSphString & sError ) {
         return false;
 
     // init schema storage.
-    m_tDocInfo.Reset ( m_tSchema.GetRowSize() );
     m_dStrAttrs.Resize ( m_tSchema.GetAttrsCount() );
+    //m_tHits.m_dData.Reserve ( m_iMaxHits ); // from sqlsource
 
     // check it
     if ( m_tSchema.m_dFields.GetLength()>SPH_MAX_FIELDS )
@@ -199,7 +199,7 @@ BYTE ** CSphSource_Python2::NextDocument ( CSphString & sError ) {
         m_dFields[i] = NULL;
     }
     */
-
+    printf("row size %d\n", m_tSchema.GetRowSize());
     m_tDocInfo.Reset ( m_tSchema.GetRowSize() );
 
     // save prev hit position.
