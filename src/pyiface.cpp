@@ -135,6 +135,14 @@ int  PySphMatch::getFieldCount()
 void PySphMatch::setAttr ( int iIndex, SphAttr_t uValue ) {
     CSphSource_Python2* pSource = (CSphSource_Python2*) _s; //support
     const CSphColumnInfo & tAttr = pSource->m_tSchema.GetAttr(iIndex);
+    printf("%s\t v = %lld \n", tAttr.m_sName.cstr(), uValue);
+    _m->SetAttr ( tAttr.m_tLocator, uValue);
+}
+
+void PySphMatch::setAttrInt64( int iIndex, int64_t uValue ) {
+    CSphSource_Python2* pSource = (CSphSource_Python2*) _s; //support
+    const CSphColumnInfo & tAttr = pSource->m_tSchema.GetAttr(iIndex);
+    printf("%s\t v = %lld \n", tAttr.m_sName.cstr(), uValue);
     _m->SetAttr ( tAttr.m_tLocator, uValue);
 }
 

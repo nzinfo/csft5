@@ -156,6 +156,7 @@ cdef extern from "pyiface.h":
 
         void setAttr ( int iIndex, SphAttr_t uValue )
         void setAttrFloat ( int iIndex, float fValue )
+        void setAttrInt64( int iIndex, int64_t uValue )
 
         void pushMva( int iIndex, vector[int64_t]& values, bool bMva64)
         void setAttrString( int iIndex, const char* s)
@@ -337,17 +338,15 @@ cdef class PyDocInfo(object):
 
     cpdef int setAttrInt64(self, int iIndex, int64_t v):
         if iIndex < 0 or iIndex>= self._iAttrCount: raise IndexError()
-        self._docInfo.setAttrFloat(iIndex, v)
+        self._docInfo.setAttrInt64(iIndex, v)
         return 0
 
-    cpdef int setAttrTimestamp(self, int iIndex, double dVal):
+    cpdef int setAttrTimestamp(self, int iIndex, int64_t dVal):
         cdef int64_t v
         #print iIndex, self._iAttrCount, dVal, self._docInfo.getAttrCount()
         if iIndex < 0 or iIndex>= self._iAttrCount: raise IndexError()
         #Python is returning the time since the epoch in seconds. Javascript takes the time in milliseconds.
-        #v = <int64_t> (dVal*10)
-        v = <int64_t> (dVal)
-        self._docInfo.setAttr(iIndex, v)
+        self._docInfo.setAttrInt64(iIndex, dVal)
         return 0
 
     cpdef int setAttrMulti(self, int iIndex, list values, bool bValue64 = False):

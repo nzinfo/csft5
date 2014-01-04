@@ -52,6 +52,7 @@ public:
     int  getFieldCount();
     void setAttr ( int iIndex, SphAttr_t uValue ) ;
     void setAttrFloat ( int iIndex, float fValue );
+    void setAttrInt64( int iIndex, int64_t uValue ) ;
 
     //void pushMva( int iIndex, std::vector<DWORD>& values);
     int pushMva( int iIndex, std::vector<int64_t>& values, bool bMva64);

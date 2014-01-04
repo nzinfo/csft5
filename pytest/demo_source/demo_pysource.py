@@ -4,7 +4,7 @@ import time
 documents = [
 	{
 		'id':100,
-		'oid': 100000000000,
+		'oid': 100000000000L,
 		'title': 'abc efg',
 		'body': "I know this is a very basic question but I couldn't find any good conclusive answer to this.",
 		'bigtag':[1,2, 100000000000]
@@ -12,14 +12,14 @@ documents = [
 	} ,
 	{
 		'id':101,
-		'oid': 100000000001,
+		'oid': 100000000001L,
 		'title': 'Timestamp Python',
 		'body': "Here is some sample output I ran on my computer, converting it to a string as well.",
 		'bigtag':[2,3, 100000000001]
 	} ,
 	{
 		'id':102,
-		'oid': 100000000002,
+		'oid': 100000000002L,
 		'title': 'a-z',
 		'body': """If the question is expressed by the title, 
 			then you can get the timestamp as a string using the .now() or .utcnow() of the datetime.datetime""",
@@ -65,7 +65,7 @@ class TestSource(object):
 		#print schema.fieldsCount(), schema.attributeCount()
 		#print schema.fieldsInfo(1), schema.attributeInfo(1)
 		# build attr -> id map
-		if False:
+		if True:
 			for i in range(0, schema.fieldsCount()):
 				print i,  schema.fieldsInfo(i)
 			for i in range(0, schema.attributeCount()):
@@ -99,7 +99,7 @@ class TestSource(object):
 			docinfo.setDocID(doc['id'])
 			#print '---', time.time()
 			#print self.attr2id, self.attr2id["bigtag"] , type(self.attr2id["bigtag"])
-			docinfo.setAttrTimestamp(self.attr2id["create_at"], time.time() + doc['id']);
+			docinfo.setAttrTimestamp( self.attr2id["create_at"], time.time() + doc['id']);
 			docinfo.setAttrInt64(self.attr2id["oid"], doc['oid'])
 			docinfo.setAttrMulti(self.attr2id["bigtag"], doc['bigtag'])
 			docinfo.setAttrString(self.attr2id["title"], doc['title'])
