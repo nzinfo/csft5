@@ -340,6 +340,69 @@ cdef class PySourceWrap(object):
                 return -1 # setup failured.
         return 0 # no such define
 
+    cpdef int indexFinished(self):
+        # optinal call back.
+        if attr_callable(self._pysource, 'indexFinished'):
+            try:
+                if self._pysource.indexFinished():
+                    return 0
+                else:
+                    return -2
+            except Exception, ex:
+                traceback.print_exc()
+                return -1 # some error in python code.
+        return 0 # no such define
+
+    cpdef int beforeIndex(self):
+        # optinal call back.
+        if attr_callable(self._pysource, 'beforeIndex'):
+            try:
+                if self._pysource.beforeIndex():
+                    return 0
+                else:
+                    return -2
+            except Exception, ex:
+                traceback.print_exc()
+                return -1 # some error in python code.
+        return 0 # no such define
+
+    cpdef int afterIndex(self):
+        # optinal call back.
+        if attr_callable(self._pysource, 'afterIndex'):
+            try:
+                if self._pysource.afterIndex():
+                    return 0
+                else:
+                    return -2
+            except Exception, ex:
+                traceback.print_exc()
+                return -1 # some error in python code.
+        return 0 # no such define
+
+    cpdef int getJoinField(self):
+        # programal optional, if has join field , the method must define.
+        return 0
+
+    cpdef int getJoinMva(self):
+        # programal optional, if has list-query , the method must define.
+        return 0
+
+    cpdef int next(self):
+        return 0
+
+    cpdef int getKillList(self):
+        # optinal call back.
+        if attr_callable(self._pysource, 'feedKillList'):
+            try:
+                if self._pysource.feedKillList():
+                    return 0
+                else:
+                    return -2
+            except Exception, ex:
+                traceback.print_exc()
+                return -1 # some error in python code.
+        return 0 # no such define
+
 ## --- python tokenizer ---
 
 ## --- python cache ---
@@ -374,6 +437,7 @@ cdef public int py_source_setup(void *ptr, CSphSchema& Schema, const CSphConfigS
     cdef CSphStringList values
     cdef uint32_t value_count
 
+    # build helper object & feed data in it.
     cdef PySourceWrap self = <PySourceWrap>(ptr)
 
     conf_items = {}
@@ -393,7 +457,7 @@ cdef public int py_source_setup(void *ptr, CSphSchema& Schema, const CSphConfigS
 
     pySchema = PySchemaWrap()
     pySchema.bind(&Schema)
-
+    # call wrap
     return self.setup(pySchema, conf_items)
 
     # temp usage for crc32 key ------->
@@ -415,30 +479,37 @@ cdef public int py_source_connected(void *ptr):
 # - OnIndexFinished
 cdef public int py_source_index_finished(void *ptr):
     cdef PySourceWrap self = <PySourceWrap>(ptr)
+    return self.index_finished()
 
 # - OnBeforeIndex
 cdef public int py_source_before_index(void *ptr):
     cdef PySourceWrap self = <PySourceWrap>(ptr)
+    return self.beforeIndex()
 
 # - GetDocField
 cdef public int py_source_get_join_field(void *ptr, const char* fieldname):
     cdef PySourceWrap self = <PySourceWrap>(ptr)
+    return self.getJoinField()
 
 # - GetMVAValue
 cdef public int py_source_get_join_mva(void *ptr, const char* fieldname):
     cdef PySourceWrap self = <PySourceWrap>(ptr)
+    return self.getJoinMva()
 
 # - NextDocument
 cdef public int py_source_next(void *ptr):
     cdef PySourceWrap self = <PySourceWrap>(ptr)
+    return self.next()
 
 # - OnAfterIndex
 cdef public int py_source_after_index(void *ptr):
     cdef PySourceWrap self = <PySourceWrap>(ptr)
+    return self.afterIndex()
 
 # - GetKillList
 cdef public int py_source_get_kill_list(void *ptr):
     cdef PySourceWrap self = <PySourceWrap>(ptr)
+    return self.getKillList()
 
 # - [Removed] GetFieldOrder -> 在 buildSchema 统一处理
 # - [Removed] BuildHits -> 有 TokenPolicy 模块处理
