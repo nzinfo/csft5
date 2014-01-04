@@ -13,7 +13,7 @@ public:
     bool	Setup ( const CSphConfigSection & hSource);
 
     const CSphString &		GetErrorMessage () const	{ return m_sError; }
-    ISphHits * getHits ();
+    ISphHits *              getHits ();
 
 public:
     /// connect to the source (eg. to the database)

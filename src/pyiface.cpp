@@ -82,11 +82,13 @@ void setColumnAsMVA(CSphColumnInfo& tCol, bool bJoin) {
     }
 }
 
-void addFieldColumn(CSphSchema* pSchema, CSphColumnInfo& tCol)
+int addFieldColumn(CSphSchema* pSchema, CSphColumnInfo& tCol)
 {
     if(pSchema){
         pSchema->m_dFields.Add(tCol);
+        return pSchema->m_dFields.GetLength()-1;
     }
+    return -1;
 }
 
 CSphColumnInfo* getSchemaField(CSphSchema* pSchema, int iIndex){

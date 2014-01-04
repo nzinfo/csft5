@@ -18,15 +18,21 @@ class TestSource(object):
 		"""
 		schema.addAttribute("create_at", "timestamp", 0, False, False)
 		schema.addAttribute("tag", "integer", 0, False, True)
-		schema.addAttribute("bigtag", "long", bIsSet = True)
+		schema.addAttribute("oid", "long")
+		print schema.addAttribute("bigtag", "long", bIsSet = True)
 
-		schema.addField("title")		
-		schema.addField("body")
+		print schema.addField("title")		
+		print schema.addField("body")
 
 		schema.addField("comments", bJoin = True)		
 		#print schema, source_conf
 		#print schema.fieldsCount(), schema.attributeCount()
 		#print schema.fieldsInfo(1), schema.attributeInfo(1)
+		if True:
+			for i in range(0, schema.fieldsCount()):
+				print i,  schema.fieldsInfo(i)
+			for i in range(0, schema.attributeCount()):
+				print i,  schema.attributeInfo(i)
 		print 'pysource, setup called'
 		return True
 		#return False
@@ -44,6 +50,8 @@ class TestSource(object):
 			@return  False | Has Exception -> 停止采集
 		"""
 		print 'pysource, feed', docinfo, hit_collector
+		print dir(docinfo)
+		print dir(hit_collector)
 
 	def feedJoinField(self, docinfo, hit_collector):
 		# fieldname => the code knows which is the joint field. -> IterateJoinedHits

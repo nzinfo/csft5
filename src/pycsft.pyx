@@ -7,7 +7,7 @@ from cpython.exc cimport PyErr_Fetch, PyErr_Restore
 
 import os
 from libcpp cimport bool
-from libc.stdint cimport uint32_t, uint64_t
+from libc.stdint cimport uint32_t, uint64_t, int64_t
 from libc.stdio cimport printf
 
 import traceback
@@ -140,12 +140,12 @@ cdef extern from "pyiface.h":
     void setColumnBitCount(CSphColumnInfo& info, int iBitCount)
     int  getColumnBitCount(CSphColumnInfo& info)
     void setColumnAsMVA(CSphColumnInfo& info, bool bJoin)
-    void addFieldColumn(CSphSchema* pSchema, CSphColumnInfo& info)
+    int addFieldColumn(CSphSchema* pSchema, CSphColumnInfo& info)
     int  getSchemaFieldCount(CSphSchema* pSchema)
     CSphColumnInfo* getSchemaField(CSphSchema* pSchema, int iIndex)
 
     cdef cppclass PySphMatch:
-        void bind(CSphMatch* _m)
+        void bind(CSphSource* s, CSphMatch* _m)
 
 cdef extern from "pysource.h":
     cdef cppclass CSphSource_Python2:
@@ -222,7 +222,7 @@ cdef class PySchemaWrap(object):
         self._schema = s
 
 
-    cpdef addAttribute(self, const char* sName, const char* sType, int iBitSize=0, bool bJoin=False, bool bIsSet=False):
+    cpdef int addAttribute(self, const char* sName, const char* sType, int iBitSize=0, bool bJoin=False, bool bIsSet=False):
         """
             向实际的 Schema 中增加 新字段
             @iBitSize <= 0, means standand size.
@@ -246,7 +246,7 @@ cdef class PySchemaWrap(object):
             setColumnAsMVA(tCol, bJoin)
 
         self._schema.AddAttr(tCol, True)
-
+        return tCol.m_iIndex
 
     cpdef addField(self, const char* sName, bool bJoin=False):
         """
@@ -256,7 +256,7 @@ cdef class PySchemaWrap(object):
         initColumnInfo(tCol, sName, NULL);
         # int	m_iIndex;  ///< index into source result set (-1 for joined fields)
         # no needs set m_iIndex, refer: CSphSource_XMLPipe2
-        addFieldColumn(self._schema, tCol);
+        return addFieldColumn(self._schema, tCol);
 
     cpdef int fieldsCount(self):
         return getSchemaFieldCount(self._schema)
@@ -298,8 +298,8 @@ cdef class PyDocInfo(object):
     """
     cdef PySphMatch _docInfo
 
-    cdef void bind(self, CSphMatch* docInfo):
-        self._docInfo.bind(docInfo)
+    cdef void bind(self, CSphSource_Python2* pSource, CSphMatch* docInfo):
+        self._docInfo.bind(<CSphSource *>pSource, docInfo)
 
     cpdef setDocID(self, uint64_t id):
         pass
@@ -308,6 +308,22 @@ cdef class PyDocInfo(object):
         return 0
 
     cpdef int setAttr(self, int iIndex, SphAttr_t uValue):
+        return 0
+
+    cpdef int setAttrFloat(self, int iIndex, float fValue):
+        return 0
+
+    cpdef int setAttrInt64(self, int iIndex, int64_t dVal):
+        return 0
+
+    cpdef int setAttrTimestamp(self, int iIndex, int64_t dVal):
+        return 0
+
+    cpdef int setAttrString(self, int iIndex, const char* sVal):
+        printf("got str %s.\n", sVal);
+        return 0
+
+    cpdef int setField(self, int iIndex, const char* sVal):
         return 0
 
     cpdef uint64_t getLastDocID(self): #FIXME: larger this when docid lager than 64bit.
@@ -349,7 +365,7 @@ cdef class PySourceWrap(object):
             绑定 DocInfo & HitCollector 到指定的 DataSource,
         """
         #printf("cpp source: %p\n", pSource)
-        self._docInfo.bind(&(pSource.m_tDocInfo) )
+        self._docInfo.bind(pSource, &(pSource.m_tDocInfo) )
         self._hitCollecotr.bind(pSource.getHits())
 
     cpdef int setup(self, schema, source_conf):

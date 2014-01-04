@@ -24,7 +24,7 @@ void initColumnInfo(CSphColumnInfo& info, const char* sName, const char* sType);
 void setColumnBitCount(CSphColumnInfo& info, int iBitCount);
 int  getColumnBitCount(CSphColumnInfo& info);
 void setColumnAsMVA(CSphColumnInfo& info, bool bJoin);
-void addFieldColumn(CSphSchema* pSchema, CSphColumnInfo& info);
+int addFieldColumn(CSphSchema* pSchema, CSphColumnInfo& info);
 int  getSchemaFieldCount(CSphSchema* pSchema);
 CSphColumnInfo* getSchemaField(CSphSchema* pSchema, int iIndex);
 
@@ -37,12 +37,18 @@ CSphSource * SpawnSourcePython ( const CSphConfigSection & hSource, const char *
 class PySphMatch
 {
 public:
-    PySphMatch():_m(NULL) {}
-    void bind(CSphMatch* m) { _m = m; }
+    PySphMatch():_m(NULL),_s(NULL) {}
+    void bind(CSphSource* s, CSphMatch* m) { _s = s; _m = m; }
+
+public:
+    inline void setDocID(uint64_t id) {     _m->m_iDocID = (SphDocID_t)id;   }
+    inline uint64_t getDocID() {    return _m->m_iDocID;    }
+
 
 protected:
 private:
     CSphMatch* _m;
+    CSphSource* _s;
 };
 
 //------ Python Tokenizer Block -------
