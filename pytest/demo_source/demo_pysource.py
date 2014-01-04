@@ -43,7 +43,7 @@ class TestSource(object):
 			@return  True  | None -> 继续采集文档信息
 			@return  False | Has Exception -> 停止采集
 		"""
-		print 'pysource, feed'
+		print 'pysource, feed', docinfo, hit_collector
 
 	def feedJoinField(self, docinfo, hit_collector):
 		# fieldname => the code knows which is the joint field. -> IterateJoinedHits

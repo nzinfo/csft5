@@ -8,6 +8,8 @@ from cpython.exc cimport PyErr_Fetch, PyErr_Restore
 import os
 from libcpp cimport bool
 from libc.stdint cimport uint32_t, uint64_t
+from libc.stdio cimport printf
+
 import traceback
 
 """
@@ -63,7 +65,10 @@ cdef extern from "sphinxstd.h":
 
 cdef extern from "sphinx.h":
     ctypedef SphDocID_t
+    ctypedef SphWordID_t
+    ctypedef Hitpos_t
     ctypedef SphAttr_t
+
 
     ctypedef enum ESphAttr:
         SPH_ATTR_NONE
@@ -107,6 +112,14 @@ cdef extern from "sphinx.h":
     cdef cppclass CSphSource:
         pass
 
+    # build index needs helper interface
+    cdef cppclass ISphHits:
+        int Length () const
+        void AddHit ( SphDocID_t uDocid, SphWordID_t uWordid, Hitpos_t uPos )
+
+    cdef cppclass CSphMatch:
+        pass
+
 cdef extern from "sphinxutils.h":
     cdef cppclass CSphConfigSection:
         void IterateStart () const
@@ -131,9 +144,16 @@ cdef extern from "pyiface.h":
     int  getSchemaFieldCount(CSphSchema* pSchema)
     CSphColumnInfo* getSchemaField(CSphSchema* pSchema, int iIndex)
 
+    cdef cppclass PySphMatch:
+        void bind(CSphMatch* _m)
+
 cdef extern from "pysource.h":
     cdef cppclass CSphSource_Python2:
         CSphSource_Python2 ( const char * sName, cpy_ref.PyObject* obj)
+        CSphMatch   m_tDocInfo
+        ISphHits    m_tHits #protected
+        ISphHits *  getHits ()
+
 
 ## --- python tokenizer ---
 
@@ -276,6 +296,11 @@ cdef class PyDocInfo(object):
     """
         供 Python 程序 设置 待检索文档的属性 和 全文检索字段
     """
+    cdef PySphMatch _docInfo
+
+    cdef void bind(self, CSphMatch* docInfo):
+        self._docInfo.bind(docInfo)
+
     cpdef setDocID(self, uint64_t id):
         pass
 
@@ -292,6 +317,10 @@ cdef class PyHitCollector(object):
     """
         为 Python 程序提供在索引建立阶段使用 的 Hit 采集接口, 可以手工设置 FieldIndex
     """
+    cdef ISphHits* _hits
+    cdef void bind(self, ISphHits* hits):
+        self._hits = hits;
+
     cpdef uint64_t getPrevDocID(self):
         return 0
 
@@ -307,32 +336,42 @@ cdef class PySourceWrap(object):
           - HitCollector 让 Python 可以主动推送索引
     """
     cdef object _pysource
+    cdef PyDocInfo _docInfo
+    cdef PyHitCollector _hitCollecotr
 
     def __init__(self, pysrc):
         self._pysource = pysrc
+        self._docInfo = PyDocInfo()
+        self._hitCollecotr = PyHitCollector()
 
     cdef bindSource(self, CSphSource_Python2* pSource):
         """
             绑定 DocInfo & HitCollector 到指定的 DataSource,
         """
+        #printf("cpp source: %p\n", pSource)
+        self._docInfo.bind(&(pSource.m_tDocInfo) )
+        self._hitCollecotr.bind(pSource.getHits())
 
     cpdef int setup(self, schema, source_conf):
         try:
             ret = self._pysource.setup(schema, source_conf)
             if ret or ret == None:
                 #check obj has necessary method.
+                if not attr_callable(self._pysource, 'feed'):
+                    return -2
                 return 0
         except Exception, ex:
             traceback.print_exc()
             return -1 # setup failured.
 
-        return -2 # some error happen
+        return -100 # some error happen
 
     cpdef int connect(self):
         # check have the function
         if attr_callable(self._pysource, 'connect'):
             try:
-                if self._pysource.connect():
+                ret = self._pysource.connect()
+                if ret or ret == None:
                     return 0
                 else:
                     return -2
@@ -345,7 +384,8 @@ cdef class PySourceWrap(object):
         # optinal call back.
         if attr_callable(self._pysource, 'indexFinished'):
             try:
-                if self._pysource.indexFinished():
+                ret = self._pysource.indexFinished()
+                if ret or ret == None:
                     return 0
                 else:
                     return -2
@@ -372,7 +412,8 @@ cdef class PySourceWrap(object):
         # optinal call back.
         if attr_callable(self._pysource, 'afterIndex'):
             try:
-                if self._pysource.afterIndex():
+                ret = self._pysource.afterIndex()
+                if ret or ret == None:
                     return 0
                 else:
                     return -2
@@ -390,7 +431,15 @@ cdef class PySourceWrap(object):
         return 0
 
     cpdef int next(self):
-        return 0
+        # should check this function when binding
+        try:
+            if self._pysource.feed(self._docInfo, self._hitCollecotr): # must return True | some value, return None | False will stop indexing.
+                return 0
+            else:
+                return -2
+        except Exception, ex:
+            traceback.print_exc()
+            return -1 # some error in python code.
 
     cpdef int getKillList(self):
         # optinal call back.

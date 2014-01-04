@@ -29,12 +29,29 @@ CSphSource_Python2::~CSphSource_Python2 ()
 #endif
 }
 
+ISphHits * CSphSource_Python2::getHits ()
+{
+    if ( m_tState.m_bDocumentDone )
+        return NULL;
+
+    return &m_tHits;
+}
+
 bool CSphSource_Python2::Setup ( const CSphConfigSection & hSource){
 #if PYSOURCE_DEBUG
     fprintf(stderr, "[DEBUG][PYSOURCE] Setup .\n");
 #endif
     int nRet = py_source_setup(_obj, m_tSchema, hSource);
     _bAttributeConfigured =  (nRet == 0);
+    // TODO: check the error code.
+    {
+        /*
+        0   OK;
+        -1  python script error.
+        -2  some required method missing.
+        -100 unknown error
+        */
+    }
     return _bAttributeConfigured;
 }
 
@@ -172,6 +189,35 @@ BYTE ** CSphSource_Python2::NextDocument ( CSphString & sError ) {
 #if PYSOURCE_DEBUG
     fprintf(stderr, "[DEBUG][PYSOURCE] NextDocument .\n");
 #endif
+
+    unsigned int iPrevHitPos = 0;
+
+    /*
+    ARRAY_FOREACH ( i, m_tSchema.m_dFields ) {
+        if(m_dFields[i])
+            free(m_dFields[i]);
+        m_dFields[i] = NULL;
+    }
+    */
+
+    m_tDocInfo.Reset ( m_tSchema.GetRowSize() );
+
+    // save prev hit position.
+    m_tHits.m_dData.Resize( 0 );
+    iPrevHitPos = m_tHits.m_dData.GetLength();
+
+    // call nextDocument -> feed
+    bool bHasMoreDoc = (py_source_next(_obj) == 0 );
+    // reset docid for newly append hits (which by python hitcollector)
+
+    // check is index finished  -> call afterIndex
+
+    // process docInfo
+    {
+        // check attribute
+        // check MVA field (embed listed mva)
+        // check fields. -> in pysource v1 , this job has taken in CSphSource_Python::SetAttr( int iIndex, PyObject* v)
+    }
     return NULL;
 }
 

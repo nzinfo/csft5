@@ -34,6 +34,17 @@ uint32_t getConfigValues(const CSphConfigSection & hSource, const char* sKey, CS
 
 CSphSource * SpawnSourcePython ( const CSphConfigSection & hSource, const char * sSourceName);
 
+class PySphMatch
+{
+public:
+    PySphMatch():_m(NULL) {}
+    void bind(CSphMatch* m) { _m = m; }
+
+protected:
+private:
+    CSphMatch* _m;
+};
+
 //------ Python Tokenizer Block -------
 
 

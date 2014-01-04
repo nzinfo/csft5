@@ -13,6 +13,7 @@ public:
     bool	Setup ( const CSphConfigSection & hSource);
 
     const CSphString &		GetErrorMessage () const	{ return m_sError; }
+    ISphHits * getHits ();
 
 public:
     /// connect to the source (eg. to the database)
@@ -81,6 +82,9 @@ public:
     /// field data getter
     /// to be implemented by descendants
     virtual BYTE **			NextDocument ( CSphString & sError ) ;
+
+protected:
+    BYTE *          m_dFields [ SPH_MAX_FIELDS ];
 
 protected:
     CSphString		m_sError;
