@@ -151,10 +151,15 @@ cdef extern from "pyiface.h":
         void setDocID(uint64_t id)
         uint64_t getDocID()
 
+        int  getAttrCount()
+        int  getFieldCount()
+
         void setAttr ( int iIndex, SphAttr_t uValue )
         void setAttrFloat ( int iIndex, float fValue )
 
         void pushMva( int iIndex, vector[int64_t]& values, bool bMva64)
+        void setAttrString( int iIndex, const char* s)
+        void setField( int iIndex, const char* utf8_str)
 
 cdef extern from "pysource.h":
     cdef cppclass CSphSource_Python2:
@@ -306,9 +311,13 @@ cdef class PyDocInfo(object):
         供 Python 程序 设置 待检索文档的属性 和 全文检索字段
     """
     cdef PySphMatch _docInfo
+    cdef int _iAttrCount
+    cdef int _iFieldCount
 
     cdef void bind(self, CSphSource_Python2* pSource, CSphMatch* docInfo):
         self._docInfo.bind(<CSphSource *>pSource, docInfo)
+        self._iAttrCount = self._docInfo.getAttrCount()
+        self._iFieldCount = self._docInfo.getFieldCount()
 
     cpdef setDocID(self, uint64_t id):
         self._docInfo.setDocID(id)
@@ -317,26 +326,33 @@ cdef class PyDocInfo(object):
         return self._docInfo.getDocID()
 
     cpdef int setAttr(self, int iIndex, SphAttr_t v):
+        if iIndex < 0 or iIndex>= self._iAttrCount: raise IndexError()
         self._docInfo.setAttr(iIndex, v)
         return 0
 
     cpdef int setAttrFloat(self, int iIndex, float v):
+        if iIndex < 0 or iIndex>= self._iAttrCount: raise IndexError()
         self._docInfo.setAttrFloat(iIndex, v)
         return 0
 
     cpdef int setAttrInt64(self, int iIndex, int64_t v):
+        if iIndex < 0 or iIndex>= self._iAttrCount: raise IndexError()
         self._docInfo.setAttrFloat(iIndex, v)
         return 0
 
     cpdef int setAttrTimestamp(self, int iIndex, double dVal):
         cdef int64_t v
+        #print iIndex, self._iAttrCount, dVal, self._docInfo.getAttrCount()
+        if iIndex < 0 or iIndex>= self._iAttrCount: raise IndexError()
         #Python is returning the time since the epoch in seconds. Javascript takes the time in milliseconds.
-        v = <int64_t> (dVal*1000)
+        #v = <int64_t> (dVal*10)
+        v = <int64_t> (dVal)
         self._docInfo.setAttr(iIndex, v)
         return 0
 
     cpdef int setAttrMulti(self, int iIndex, list values, bool bValue64 = False):
         cdef vector[int64_t] vect
+        if iIndex < 0 or iIndex>= self._iAttrCount: raise IndexError()
         vect.reserve(1024)
         for v in values:
             vect.push_back(v)
@@ -345,10 +361,14 @@ cdef class PyDocInfo(object):
 
 
     cpdef int setAttrString(self, int iIndex, const char* sVal):
-        printf("got str %s.\n", sVal);
+        #printf("got str %s.\n", sVal);
+        if iIndex < 0 or iIndex>= self._iAttrCount: raise IndexError()
+        self._docInfo.setAttrString(iIndex, sVal)
         return 0
 
     cpdef int setField(self, int iIndex, const char* sVal):
+        if iIndex < 0 or iIndex>= self._iFieldCount: raise IndexError()
+        self._docInfo.setField(iIndex, sVal)
         return 0
 
     cpdef uint64_t getLastDocID(self): #FIXME: larger this when docid lager than 64bit.
@@ -379,19 +399,21 @@ cdef class PySourceWrap(object):
     cdef object _pysource
     cdef PyDocInfo _docInfo
     cdef PyHitCollector _hitCollecotr
+    cdef CSphSource_Python2* _csrc
 
     def __init__(self, pysrc):
         self._pysource = pysrc
         self._docInfo = PyDocInfo()
         self._hitCollecotr = PyHitCollector()
+        self._csrc = NULL
 
     cdef bindSource(self, CSphSource_Python2* pSource):
         """
             绑定 DocInfo & HitCollector 到指定的 DataSource,
+                - do real bind after setup.
         """
+        self._csrc = pSource;
         #printf("cpp source: %p\n", pSource)
-        self._docInfo.bind(pSource, &(pSource.m_tDocInfo) )
-        self._hitCollecotr.bind(pSource.getHits())
 
     cpdef int setup(self, schema, source_conf):
         try:
@@ -400,6 +422,11 @@ cdef class PySourceWrap(object):
                 #check obj has necessary method.
                 if not attr_callable(self._pysource, 'feed'):
                     return -2
+
+                #bind source.
+                self._docInfo.bind(self._csrc, &(self._csrc.m_tDocInfo) )
+                self._hitCollecotr.bind(self._csrc.getHits())
+
                 return 0
         except Exception, ex:
             traceback.print_exc()
@@ -449,11 +476,11 @@ cdef class PySourceWrap(object):
                 return -1 # some error in python code.
         return 0 # no such define
 
-    cpdef int afterIndex(self):
+    cpdef int afterIndex(self, bool bNormalExit):
         # optinal call back.
         if attr_callable(self._pysource, 'afterIndex'):
             try:
-                ret = self._pysource.afterIndex()
+                ret = self._pysource.afterIndex(bNormalExit)
                 if ret or ret == None:
                     return 0
                 else:
@@ -477,7 +504,7 @@ cdef class PySourceWrap(object):
             if self._pysource.feed(self._docInfo, self._hitCollecotr): # must return True | some value, return None | False will stop indexing.
                 return 0
             else:
-                return -2
+                return 1
         except Exception, ex:
             traceback.print_exc()
             return -1 # some error in python code.
@@ -594,9 +621,9 @@ cdef public int py_source_next(void *ptr):
     return self.next()
 
 # - OnAfterIndex
-cdef public int py_source_after_index(void *ptr):
+cdef public int py_source_after_index(void *ptr, bool bNormalExit):
     cdef PySourceWrap self = <PySourceWrap>(ptr)
-    return self.afterIndex()
+    return self.afterIndex(bNormalExit)
 
 # - GetKillList
 cdef public int py_source_get_kill_list(void *ptr):

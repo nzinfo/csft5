@@ -143,7 +143,25 @@ bool CSphSource_Python2::IterateMultivaluedStart ( int iAttr, CSphString & sErro
 #if PYSOURCE_DEBUG
     fprintf(stderr, "[DEBUG][PYSOURCE] IterateMultivaluedStart .\n");
 #endif
-    return false;
+    if ( iAttr<0 || iAttr>=m_tSchema.GetAttrsCount() )
+        return false;
+
+    const CSphColumnInfo & tAttr = m_tSchema.GetAttr(iAttr);
+    if ( !(tAttr.m_eAttrType==SPH_ATTR_UINT32SET || tAttr.m_eAttrType==SPH_ATTR_INT64SET ) )
+        return false;
+    switch ( tAttr.m_eSrc )
+    {
+    case SPH_ATTRSRC_FIELD:
+        return false;
+    case SPH_ATTRSRC_QUERY:
+        {
+            //FIXME: should check feedMultiValueAttribute existance.
+            return true;
+        }
+    default:
+        sError.SetSprintf ( "INTERNAL ERROR: unknown multi-valued attr source type %d", tAttr.m_eSrc );
+        return false;
+    } // end of switch
 }
 
 /// get next multi-valued (id,attr-value) or (id, offset) for mva64 tuple to m_tDocInfo
@@ -152,17 +170,6 @@ bool CSphSource_Python2::IterateMultivaluedNext () {
     fprintf(stderr, "[DEBUG][PYSOURCE] IterateMultivaluedNext .\n");
 #endif
     return false;
-}
-
-/// begin iterating values of multi-valued attribute iAttr stored in a field
-/// will fail if iAttr is out of range, or is not multi-valued
-SphRange_t CSphSource_Python2::IterateFieldMVAStart ( int iAttr ) {
-#if PYSOURCE_DEBUG
-    fprintf(stderr, "[DEBUG][PYSOURCE] IterateFieldMVAStart .\n");
-#endif
-    SphRange_t tRange;
-    tRange.m_iStart = tRange.m_iLength = 0;
-    return tRange;
 }
 
 /// begin iterating kill list
@@ -192,13 +199,8 @@ BYTE ** CSphSource_Python2::NextDocument ( CSphString & sError ) {
 
     unsigned int iPrevHitPos = 0;
 
-    /*
-    ARRAY_FOREACH ( i, m_tSchema.m_dFields ) {
-        if(m_dFields[i])
-            free(m_dFields[i]);
-        m_dFields[i] = NULL;
-    }
-    */
+    memset(m_dFields,0,sizeof(m_dFields));
+
     // printf("row size %d\n", m_tSchema.GetRowSize());
     m_tDocInfo.Reset ( m_tSchema.GetRowSize() );
 
@@ -207,10 +209,19 @@ BYTE ** CSphSource_Python2::NextDocument ( CSphString & sError ) {
     iPrevHitPos = m_tHits.m_dData.GetLength();
 
     // call nextDocument -> feed
-    bool bHasMoreDoc = (py_source_next(_obj) == 0 );
+    int nRet = py_source_next(_obj);
+    bool bHasMoreDoc = (nRet == 0 ); //-1 have exception; 1 normal exit
     // reset docid for newly append hits (which by python hitcollector)
 
     // check is index finished  -> call afterIndex
+    if(!bHasMoreDoc) {
+        // might be has exception... if nRet != -1
+        if(py_source_after_index(_obj, nRet == 1) != 0) {
+            // if u wanna exit, set docid not 0 & return NULL.
+            m_tDocInfo.m_iDocID = -1;
+            return NULL; // this will cause IterateDocument return false.
+        }
+    } // end moreDoc check.
 
     // process docInfo
     {
@@ -218,7 +229,7 @@ BYTE ** CSphSource_Python2::NextDocument ( CSphString & sError ) {
         // check MVA field (embed listed mva)
         // check fields. -> in pysource v1 , this job has taken in CSphSource_Python::SetAttr( int iIndex, PyObject* v)
     }
-    return NULL;
+    return m_dFields;
 }
 
 // end of file

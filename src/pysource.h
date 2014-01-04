@@ -71,7 +71,7 @@ public:
 
     /// begin iterating values of multi-valued attribute iAttr stored in a field
     /// will fail if iAttr is out of range, or is not multi-valued
-    virtual SphRange_t					IterateFieldMVAStart ( int iAttr ) ;
+    // virtual SphRange_t					IterateFieldMVAStart ( int iAttr ) ;
 
     /// begin iterating kill list
     virtual bool						IterateKillListStart ( CSphString & sError ) ;

@@ -48,11 +48,17 @@ public:
 public:
     inline void setDocID(uint64_t id) {     _m->m_iDocID = (SphDocID_t)id;   }
     inline uint64_t getDocID() {    return _m->m_iDocID;    }
+    int  getAttrCount();
+    int  getFieldCount();
     void setAttr ( int iIndex, SphAttr_t uValue ) ;
     void setAttrFloat ( int iIndex, float fValue );
 
     //void pushMva( int iIndex, std::vector<DWORD>& values);
     int pushMva( int iIndex, std::vector<int64_t>& values, bool bMva64);
+
+    // string related
+    void setAttrString( int iIndex, const char* s);
+    void setField( int iIndex, const char* utf8_str);
 
 protected:
 private:

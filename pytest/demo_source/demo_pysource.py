@@ -49,16 +49,18 @@ class TestSource(object):
 		"""
 		self.attr2id["create_at"] = schema.addAttribute("create_at", "timestamp", 0, False, False)
 		#attr2id["tag"] = 
-		schema.addAttribute("tag", "integer", 0, bJoin=True, bIsSet=True)
+		#schema.addAttribute("tag", "integer", 0, bJoin=True, bIsSet=True)
 		
 		self.attr2id["oid"] = schema.addAttribute("oid", "long")
+		self.attr2id["title"] = schema.addAttribute("title", "string")
 		self.attr2id["bigtag"] =  schema.addAttribute("bigtag", "long", bIsSet = True)
 
 
 		self.field2id["title"] =  schema.addField("title")		
 		self.field2id["body"] =  schema.addField("body")
 
-		schema.addField("comments", bJoin = True)		
+		#schema.addField("comments", bJoin = True)		
+
 		#print schema, source_conf
 		#print schema.fieldsCount(), schema.attributeCount()
 		#print schema.fieldsInfo(1), schema.attributeInfo(1)
@@ -95,10 +97,19 @@ class TestSource(object):
 		if True:
 			# fill docinfo.
 			docinfo.setDocID(doc['id'])
-			print '---', time.time()
-			docinfo.setAttrTimestamp(self.attr2id["create_at"], time.time() - 1000*doc['id']);
-			print doc
+			#print '---', time.time()
+			#print self.attr2id, self.attr2id["bigtag"] , type(self.attr2id["bigtag"])
+			docinfo.setAttrTimestamp(self.attr2id["create_at"], time.time() + doc['id']);
+			docinfo.setAttrInt64(self.attr2id["oid"], doc['oid'])
+			docinfo.setAttrMulti(self.attr2id["bigtag"], doc['bigtag'])
+			docinfo.setAttrString(self.attr2id["title"], doc['title'])
+
+			docinfo.setField(self.field2id["title"], doc['title'])
+			docinfo.setField(self.field2id["body"], doc['body'])
+			#docinfo.setField(100, doc['body'])
+			#print doc
 			pass
+
 		self.idx += 1
 		return True
 
@@ -127,8 +138,8 @@ class TestSource(object):
 		print 'pysource, beforeIndex'
 		pass
 
-	def afterIndex(self):
-		print 'pysource, afterIndex'
+	def afterIndex(self, bNormalExit = True):
+		print 'pysource, afterIndex', bNormalExit
 		pass
 
 	def indexFinished(self):
