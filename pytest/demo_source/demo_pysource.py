@@ -24,9 +24,11 @@ class TestSource(object):
 
 		schema.addField("comments", bJoin = True)		
 		#print schema, source_conf
-		print schema.fieldsCount(), schema.attributeCount()
-		print schema.fieldsInfo(1), schema.attributeInfo(1)
-		return False
+		#print schema.fieldsCount(), schema.attributeCount()
+		#print schema.fieldsInfo(1), schema.attributeInfo(1)
+		print 'setup called'
+		return True
+		#return False
 
 	"""
 		想索引 提供数据
