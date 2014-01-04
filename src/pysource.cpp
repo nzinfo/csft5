@@ -199,7 +199,7 @@ BYTE ** CSphSource_Python2::NextDocument ( CSphString & sError ) {
         m_dFields[i] = NULL;
     }
     */
-    printf("row size %d\n", m_tSchema.GetRowSize());
+    // printf("row size %d\n", m_tSchema.GetRowSize());
     m_tDocInfo.Reset ( m_tSchema.GetRowSize() );
 
     // save prev hit position.

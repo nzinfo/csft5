@@ -24436,7 +24436,7 @@ SphRange_t CSphSource_Document::IterateFieldMVAStart ( int iAttr )
 }
 
 
-static int sphAddMva64 ( CSphVector<DWORD> & dStorage, int64_t iVal )
+int sphAddMva64 ( CSphVector<DWORD> & dStorage, int64_t iVal )
 {
 	int uOff = dStorage.GetLength();
 	dStorage.Resize ( uOff+2 );

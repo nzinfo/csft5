@@ -9,6 +9,7 @@ import os
 from libcpp cimport bool
 from libc.stdint cimport uint32_t, uint64_t, int64_t
 from libc.stdio cimport printf
+from libcpp.vector cimport vector
 
 import traceback
 
@@ -146,6 +147,14 @@ cdef extern from "pyiface.h":
 
     cdef cppclass PySphMatch:
         void bind(CSphSource* s, CSphMatch* _m)
+
+        void setDocID(uint64_t id)
+        uint64_t getDocID()
+
+        void setAttr ( int iIndex, SphAttr_t uValue )
+        void setAttrFloat ( int iIndex, float fValue )
+
+        void pushMva( int iIndex, vector[int64_t]& values, bool bMva64)
 
 cdef extern from "pysource.h":
     cdef cppclass CSphSource_Python2:
@@ -302,22 +311,38 @@ cdef class PyDocInfo(object):
         self._docInfo.bind(<CSphSource *>pSource, docInfo)
 
     cpdef setDocID(self, uint64_t id):
-        pass
+        self._docInfo.setDocID(id)
 
     cpdef uint64_t getDocID(self):
+        return self._docInfo.getDocID()
+
+    cpdef int setAttr(self, int iIndex, SphAttr_t v):
+        self._docInfo.setAttr(iIndex, v)
         return 0
 
-    cpdef int setAttr(self, int iIndex, SphAttr_t uValue):
+    cpdef int setAttrFloat(self, int iIndex, float v):
+        self._docInfo.setAttrFloat(iIndex, v)
         return 0
 
-    cpdef int setAttrFloat(self, int iIndex, float fValue):
+    cpdef int setAttrInt64(self, int iIndex, int64_t v):
+        self._docInfo.setAttrFloat(iIndex, v)
         return 0
 
-    cpdef int setAttrInt64(self, int iIndex, int64_t dVal):
+    cpdef int setAttrTimestamp(self, int iIndex, double dVal):
+        cdef int64_t v
+        #Python is returning the time since the epoch in seconds. Javascript takes the time in milliseconds.
+        v = <int64_t> (dVal*1000)
+        self._docInfo.setAttr(iIndex, v)
         return 0
 
-    cpdef int setAttrTimestamp(self, int iIndex, int64_t dVal):
-        return 0
+    cpdef int setAttrMulti(self, int iIndex, list values, bool bValue64 = False):
+        cdef vector[int64_t] vect
+        vect.reserve(1024)
+        for v in values:
+            vect.push_back(v)
+        self._docInfo.pushMva(iIndex, vect, bValue64)
+        return len(values)
+
 
     cpdef int setAttrString(self, int iIndex, const char* sVal):
         printf("got str %s.\n", sVal);

@@ -1,6 +1,8 @@
 #ifndef PYIFACECSFT_H
 #define PYIFACECSFT_H
 
+#include <vector>
+
 #include "sphinx.h"
 #include "sphinxutils.h"
 
@@ -34,16 +36,23 @@ uint32_t getConfigValues(const CSphConfigSection & hSource, const char* sKey, CS
 
 CSphSource * SpawnSourcePython ( const CSphConfigSection & hSource, const char * sSourceName);
 
+
 class PySphMatch
 {
 public:
     PySphMatch():_m(NULL),_s(NULL) {}
+    /*
+     *  虽然接口上支持 CSphSource, 实际只能传入 CSphSource_Python2;
+     */
     void bind(CSphSource* s, CSphMatch* m) { _s = s; _m = m; }
-
 public:
     inline void setDocID(uint64_t id) {     _m->m_iDocID = (SphDocID_t)id;   }
     inline uint64_t getDocID() {    return _m->m_iDocID;    }
+    void setAttr ( int iIndex, SphAttr_t uValue ) ;
+    void setAttrFloat ( int iIndex, float fValue );
 
+    //void pushMva( int iIndex, std::vector<DWORD>& values);
+    int pushMva( int iIndex, std::vector<int64_t>& values, bool bMva64);
 
 protected:
 private:

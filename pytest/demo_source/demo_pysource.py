@@ -1,9 +1,29 @@
 # -*- coding: UTF-8 -*-
+import time
 
 documents = [
 	{
 		'id':100,
-		'oid': 1000000
+		'oid': 100000000000,
+		'title': 'abc efg',
+		'body': "I know this is a very basic question but I couldn't find any good conclusive answer to this.",
+		'bigtag':[1,2, 100000000000]
+
+	} ,
+	{
+		'id':101,
+		'oid': 100000000001,
+		'title': 'Timestamp Python',
+		'body': "Here is some sample output I ran on my computer, converting it to a string as well.",
+		'bigtag':[2,3, 100000000001]
+	} ,
+	{
+		'id':102,
+		'oid': 100000000002,
+		'title': 'a-z',
+		'body': """If the question is expressed by the title, 
+			then you can get the timestamp as a string using the .now() or .utcnow() of the datetime.datetime""",
+		'bigtag':[3, 100000000003]
 	}
 ]
 
@@ -12,6 +32,10 @@ class TestSource(object):
 	def __init__(self):
 		super(TestSource, self).__init__()
 		self.abc=123
+		self.idx = 0
+
+		self.attr2id = {}
+		self.field2id = {}
 
 	"""
 		配置 索引的 字段信息
@@ -23,23 +47,28 @@ class TestSource(object):
 			@schema 		PySchemaWrap 
 			@source_conf 	Dictionary
 		"""
-		schema.addAttribute("create_at", "timestamp", 0, False, False)
+		self.attr2id["create_at"] = schema.addAttribute("create_at", "timestamp", 0, False, False)
+		#attr2id["tag"] = 
 		schema.addAttribute("tag", "integer", 0, bJoin=True, bIsSet=True)
-		schema.addAttribute("oid", "long")
-		print schema.addAttribute("bigtag", "long", bIsSet = True)
+		
+		self.attr2id["oid"] = schema.addAttribute("oid", "long")
+		self.attr2id["bigtag"] =  schema.addAttribute("bigtag", "long", bIsSet = True)
 
-		print schema.addField("title")		
-		print schema.addField("body")
+
+		self.field2id["title"] =  schema.addField("title")		
+		self.field2id["body"] =  schema.addField("body")
 
 		schema.addField("comments", bJoin = True)		
 		#print schema, source_conf
 		#print schema.fieldsCount(), schema.attributeCount()
 		#print schema.fieldsInfo(1), schema.attributeInfo(1)
-		if True:
+		# build attr -> id map
+		if False:
 			for i in range(0, schema.fieldsCount()):
 				print i,  schema.fieldsInfo(i)
 			for i in range(0, schema.attributeCount()):
 				print i,  schema.attributeInfo(i)
+		
 		print 'pysource, setup called'
 		return True
 		#return False
@@ -57,9 +86,21 @@ class TestSource(object):
 			@return  True  | None -> 继续采集文档信息
 			@return  False | Has Exception -> 停止采集
 		"""
-		print 'pysource, feed', docinfo, hit_collector
-		print dir(docinfo)
-		print dir(hit_collector)
+		#print 'pysource, feed', docinfo, hit_collector
+		#print dir(docinfo)
+		#print dir(hit_collector)
+		if self.idx >= len(documents):
+			return False
+		doc = documents[self.idx]
+		if True:
+			# fill docinfo.
+			docinfo.setDocID(doc['id'])
+			print '---', time.time()
+			docinfo.setAttrTimestamp(self.attr2id["create_at"], time.time() - 1000*doc['id']);
+			print doc
+			pass
+		self.idx += 1
+		return True
 
 	def feedJoinField(self, docinfo, hit_collector):
 		# fieldname => the code knows which is the joint field. -> IterateJoinedHits

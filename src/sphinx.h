@@ -1134,6 +1134,7 @@ inline int sphUnpackStr ( const BYTE * pRow, const BYTE ** ppStr )
 	return v;
 }
 
+int sphAddMva64 ( CSphVector<DWORD> & dStorage, int64_t iVal );
 
 /// search query match (document info plus weight/tag)
 class CSphMatch

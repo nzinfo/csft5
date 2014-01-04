@@ -119,6 +119,46 @@ uint32_t getConfigValues(const CSphConfigSection & hSource, const char* sKey, CS
     return values.GetLength() - orig_length;
 }
 
+//------- warp objects -----
+void PySphMatch::setAttr ( int iIndex, SphAttr_t uValue ) {
+    CSphSource_Python2* pSource = (CSphSource_Python2*) _s; //support
+    const CSphColumnInfo & tAttr = pSource->m_tSchema.GetAttr(iIndex);
+    _m->SetAttr ( tAttr.m_tLocator, uValue);
+}
+
+void PySphMatch::setAttrFloat ( int iIndex, float fValue ) {
+    CSphSource_Python2* pSource = (CSphSource_Python2*) _s; //support
+    const CSphColumnInfo & tAttr = pSource->m_tSchema.GetAttr(iIndex);
+    _m->SetAttr ( tAttr.m_tLocator, fValue);
+}
+
+int PySphMatch::pushMva( int iIndex, std::vector<int64_t>& values, bool bMva64) {
+    CSphVector < DWORD > & dMva = _s->m_dMva;
+    assert ( dMva.GetLength() );
+
+    int uOff = dMva.GetLength();
+    dMva.Add ( 0 ); // reserve value for count
+    // for each
+    for(std::vector<int64_t>::iterator it = values.begin(); it != values.end(); ++it)
+    {
+        int64_t d64Val = *it;
+        if ( !bMva64 )
+            dMva.Add ( (DWORD) d64Val);
+        else
+            sphAddMva64 ( dMva, d64Val );
+    }
+    int iCount = dMva.GetLength()-uOff-1;
+    if ( !iCount )
+    {
+        dMva.Pop(); // remove reserved value for count in case of 0 MVAs
+        return 0;
+    } else
+    {
+        dMva[uOff] = iCount;
+        return uOff; // return offset to ( count, [value] )
+    }
+}
+
 #if USE_PYTHON
 CSphSource * SpawnSourcePython ( const CSphConfigSection & hSource, const char * sSourceName )
 {

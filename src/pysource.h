@@ -3,9 +3,14 @@
 
 #include "sphinx.h"
 #include "py_layer.h"
+#include "pyiface.h"
+
 
 class CSphSource_Python2 : public CSphSource_Document
 {
+
+friend class PySphMatch;
+
 public:
 
             CSphSource_Python2 ( const char * sName, PyObject *obj);
