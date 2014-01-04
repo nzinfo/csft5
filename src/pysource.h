@@ -84,7 +84,7 @@ public:
 
 protected:
     CSphString		m_sError;
-
+    bool          _bAttributeConfigured;
     PyObject    * _obj;
 };
 

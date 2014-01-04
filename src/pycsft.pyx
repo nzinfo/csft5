@@ -148,6 +148,17 @@ cdef extern from "pysource.h":
 ## --- python conf ---
 
 ## --- python source ---
+def attr_callable(obj, attr_name):
+    try:
+        func = getattr(obj, attr_name)
+        if callable(func):
+            return True
+        else:
+            print("[WARNING][PySource] '%s' is defined but not a callable function." % attr_name);
+    except AttributeError, ex:
+        return False
+    return False
+
 class InvalidAttributeType(Exception):
     pass
 
@@ -306,8 +317,28 @@ cdef class PySourceWrap(object):
         """
 
     cpdef int setup(self, schema, source_conf):
-        self._pysource.setup(schema, source_conf)
-        return 0
+        try:
+            if self._pysource.setup(schema, source_conf):
+                #check obj has necessary method.
+                return 0
+        except Exception, ex:
+            traceback.print_exc()
+            return -1 # setup failured.
+
+        return -2 # some error happen
+
+    cpdef int connect(self):
+        # check have the function
+        if attr_callable(self._pysource, 'connect'):
+            try:
+                if self._pysource.connect():
+                    return 0
+                else:
+                    return -2
+            except Exception, ex:
+                traceback.print_exc()
+                return -1 # setup failured.
+        return 0 # no such define
 
 ## --- python tokenizer ---
 
@@ -363,26 +394,23 @@ cdef public int py_source_setup(void *ptr, CSphSchema& Schema, const CSphConfigS
     pySchema = PySchemaWrap()
     pySchema.bind(&Schema)
 
-    try:
-        return self.setup(pySchema, conf_items)
-    except Exception, ex:
-        traceback.print_exc()
-        return -1 # setup failured.
+    return self.setup(pySchema, conf_items)
 
-    # temp usage for crc32 key
+    # temp usage for crc32 key ------->
     if False:
         keys = ["integer", "timestamp", "boolean", "float", "long", "string", "poly2d", "field", "json"]
         for k in keys:
             print k, getCRC32(k, len(k))
     #print conf_items
 
-# - [Renamed] GetSchema -> buildSchema
+# - [Renamed] GetSchema -> buildSchema  @Deprecated
 #cdef public int py_source_build_schema(void *ptr, PySphConfig& hConf):
 #    pass
 
 # - Connected
 cdef public int py_source_connected(void *ptr):
     cdef PySourceWrap self = <PySourceWrap>(ptr)
+    return self.connect()
 
 # - OnIndexFinished
 cdef public int py_source_index_finished(void *ptr):

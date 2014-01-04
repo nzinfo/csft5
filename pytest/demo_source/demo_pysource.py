@@ -4,6 +4,7 @@ class TestSource(object):
 	"""测试使用的 Python 数据源"""
 	def __init__(self):
 		super(TestSource, self).__init__()
+		self.abc=123
 
 	"""
 		配置 索引的 字段信息
@@ -61,13 +62,9 @@ class TestSource(object):
 	"""
 		与数据连接有关的接口
 	"""
-	def beforeConnect(self):
-		print 'pysource, beforeConnect'
-		pass
-
-	def afterConnected(self):
-		print 'pysource, afterConnected'
-		pass
+	def connect(self):
+		print 'pysource, Connect'
+		return True
 
 	def beforeIndex(self):
 		print 'pysource, beforeIndex'

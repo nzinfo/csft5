@@ -4,14 +4,17 @@
 #define PYSOURCE_DEBUG 1
 //#define PYSOURCE_DEBUG 0
 
+#define LOC_ERROR2(_msg,_arg,_arg2)		{ sError.SetSprintf ( _msg, _arg, _arg2 ); return false; }
+
 CSphSource_Python2::CSphSource_Python2 ( const char * sName, PyObject *obj)
             : CSphSource_Document ( sName )
+            , _bAttributeConfigured(false)
             , _obj(obj)
 {
     // 检测 DocID 是否为 64bit 的
     assert(sizeof(uint64_t) >= sizeof(SphDocID_t));
 
-    Py_INCREF(_obj);
+    Py_INCREF(_obj); // hold the referenct, it doesn't hurt.
 #if PYSOURCE_DEBUG
     fprintf(stderr, "[DEBUG][PYSOURCE] Init source '%s'.\n", sName);
 #endif
@@ -19,7 +22,7 @@ CSphSource_Python2::CSphSource_Python2 ( const char * sName, PyObject *obj)
 
 CSphSource_Python2::~CSphSource_Python2 ()
 {
-    // ...
+    // release the obj.
     Py_XDECREF(_obj);
 #if PYSOURCE_DEBUG
     fprintf(stderr, "[DEBUG][PYSOURCE] Deinit source .\n");
@@ -30,8 +33,9 @@ bool CSphSource_Python2::Setup ( const CSphConfigSection & hSource){
 #if PYSOURCE_DEBUG
     fprintf(stderr, "[DEBUG][PYSOURCE] Setup .\n");
 #endif
-    py_source_setup(_obj, m_tSchema, hSource);
-    return false;
+    int nRet = py_source_setup(_obj, m_tSchema, hSource);
+    _bAttributeConfigured =  (nRet == 0);
+    return _bAttributeConfigured;
 }
 
 // DataSouce Interface
@@ -40,7 +44,21 @@ bool CSphSource_Python2::Connect ( CSphString & sError ) {
 #if PYSOURCE_DEBUG
     fprintf(stderr, "[DEBUG][PYSOURCE] Connect .\n");
 #endif
-    return false;
+    // update capablity of m_tHits
+    // call pysource connect
+    if(py_source_connected(_obj) != 0)
+        return false;
+
+    // init schema storage.
+    m_tDocInfo.Reset ( m_tSchema.GetRowSize() );
+    m_dStrAttrs.Resize ( m_tSchema.GetAttrsCount() );
+
+    // check it
+    if ( m_tSchema.m_dFields.GetLength()>SPH_MAX_FIELDS )
+        LOC_ERROR2 ( "too many fields (fields=%d, max=%d); raise SPH_MAX_FIELDS in sphinx.h and rebuild",
+            m_tSchema.m_dFields.GetLength(), SPH_MAX_FIELDS );
+
+    return true;
 }
 
 /// disconnect from the source
@@ -60,7 +78,7 @@ bool CSphSource_Python2::HasAttrsConfigured () {
 #if PYSOURCE_DEBUG
     fprintf(stderr, "[DEBUG][PYSOURCE] HasAttrsConfigured .\n");
 #endif
-    return false;
+    return _bAttributeConfigured;
 }
 
 /// begin indexing this source
