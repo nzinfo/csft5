@@ -26,7 +26,7 @@ class TestSource(object):
 		#print schema, source_conf
 		#print schema.fieldsCount(), schema.attributeCount()
 		#print schema.fieldsInfo(1), schema.attributeInfo(1)
-		print 'setup called'
+		print 'pysource, setup called'
 		return True
 		#return False
 
@@ -42,34 +42,43 @@ class TestSource(object):
 			@return  True  | None -> 继续采集文档信息
 			@return  False | Has Exception -> 停止采集
 		"""
+		print 'pysource, feed'
 
 	def feedJoinField(self, docinfo, hit_collector):
 		# fieldname => the code knows which is the joint field. -> IterateJoinedHits
+		print 'pysource, feedJoinField'
 		pass
 
 	def feedMultiValueAttribute(self, fieldname, docinfo, hit_collector):
+		print 'pysource, feedMultiValueAttribute'
 		pass
 
 	def feedKillList(self):
 		# 参数待定
+		print 'pysource, feedKillList'
 		pass
 
 	"""
 		与数据连接有关的接口
 	"""
 	def beforeConnect(self):
+		print 'pysource, beforeConnect'
 		pass
 
 	def afterConnected(self):
+		print 'pysource, afterConnected'
 		pass
 
 	def beforeIndex(self):
+		print 'pysource, beforeIndex'
 		pass
 
 	def afterIndex(self):
+		print 'pysource, afterIndex'
 		pass
 
 	def indexFinished(self):
+		print 'pysource, indexFinished'
 		pass
 
 
