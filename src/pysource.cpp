@@ -68,8 +68,13 @@ bool CSphSource_Python2::Connect ( CSphString & sError ) {
 
     // init schema storage.
     m_dStrAttrs.Resize ( m_tSchema.GetAttrsCount() );
-    //m_tHits.m_dData.Reserve ( m_iMaxHits ); // from sqlsource
-
+    m_tHits.m_dData.Reserve ( m_iMaxHits ); // from sqlsource
+    // update plain (not join) field count.
+    m_iPlainFieldsLength = 0;
+    ARRAY_FOREACH ( i, m_tSchema.m_dFields ) {
+        if(m_tSchema.m_dFields[i].m_iIndex!=-1)
+            m_iPlainFieldsLength ++;
+    }
     // check it
     if ( m_tSchema.m_dFields.GetLength()>SPH_MAX_FIELDS )
         LOC_ERROR2 ( "too many fields (fields=%d, max=%d); raise SPH_MAX_FIELDS in sphinx.h and rebuild",
@@ -190,7 +195,11 @@ bool CSphSource_Python2::IterateKillListNext ( SphDocID_t & tDocId ) {
 
 /// post-index callback
 /// gets called when the indexing is succesfully (!) over
-// virtual void						PostIndex () {}
+void CSphSource_Python2::PostIndex () {
+    CSphSource_Document::PostIndex();
+    if(py_source_index_finished(_obj) != 0)
+        return ; //what can I do...
+}
 
 BYTE ** CSphSource_Python2::NextDocument ( CSphString & sError ) {
 #if PYSOURCE_DEBUG
@@ -228,6 +237,10 @@ BYTE ** CSphSource_Python2::NextDocument ( CSphString & sError ) {
         // check attribute
         // check MVA field (embed listed mva)
         // check fields. -> in pysource v1 , this job has taken in CSphSource_Python::SetAttr( int iIndex, PyObject* v)
+    }
+    {
+        // debug usage.
+        printf("%s\t%s\t\n", m_dFields[0], m_dFields[1]);
     }
     return m_dFields;
 }

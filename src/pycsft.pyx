@@ -204,11 +204,15 @@ cdef class PySchemaWrap(object):
     cdef CSphSchema* _schema
     cdef object _valid_attribute_type # python list
     cdef int iIndex
+    cdef list _join_fields
+    cdef int _i_plain_fields_length
 
     def  __cinit__(self):
         self._schema = NULL
         self._valid_attribute_type = ["integer", "timestamp", "boolean", "float", "long", "string", "poly2d", "field", "json"]
         self.iIndex = 0
+        self._join_fields = []
+        self._i_plain_fields_length = 0
 
     cdef sphColumnInfoTypeToString(self, CSphColumnInfo& tCol):
         type2str = {
@@ -236,6 +240,13 @@ cdef class PySchemaWrap(object):
     cdef bind(self, CSphSchema* s):
         self._schema = s
 
+    cpdef done(self):
+        cdef CSphColumnInfo tCol
+        for sName in self._join_fields:
+            initColumnInfo(tCol, sName, NULL)
+            tCol.m_iIndex = -1
+            tCol.m_bIndexed = True
+            addFieldColumn(self._schema, tCol)
 
     cpdef int addAttribute(self, const char* sName, const char* sType, int iBitSize=0, bool bJoin=False, bool bIsSet=False):
         """
@@ -270,11 +281,23 @@ cdef class PySchemaWrap(object):
         cdef CSphColumnInfo tCol
         initColumnInfo(tCol, sName, NULL);
         # int	m_iIndex;  ///< index into source result set (-1 for joined fields)
-        # no needs set m_iIndex, refer: CSphSource_XMLPipe2
-        return addFieldColumn(self._schema, tCol);
+        if not bJoin:
+            tCol.m_iIndex = self.iIndex
+            tCol.m_bIndexed = True
+            self.iIndex += 1
+            self._i_plain_fields_length += 1 # add new plain field.
+
+            return addFieldColumn(self._schema, tCol)
+        else:
+            # TODO: add new field to a list, and add to m_dFields...
+            self._join_fields.append(sName)
+            return getSchemaFieldCount(self._schema) + len(self._join_fields) -1
+
+    cpdef int fieldsBaseCount(self):
+        return self._i_plain_fields_length;
 
     cpdef int fieldsCount(self):
-        return getSchemaFieldCount(self._schema)
+        return getSchemaFieldCount(self._schema) + len(self._join_fields) # the total count.
 
     cpdef int attributeCount(self):
         return self._schema.GetAttrsCount()
@@ -287,6 +310,7 @@ cdef class PySchemaWrap(object):
             return {
                 "name":tCol.m_sName.cstr(),
             }
+        #FIXME: the join fields.
         return None
 
     cpdef object attributeInfo(self, int iIndex):
@@ -480,6 +504,19 @@ cdef class PySourceWrap(object):
         if attr_callable(self._pysource, 'afterIndex'):
             try:
                 ret = self._pysource.afterIndex(bNormalExit)
+                if ret or ret == None:
+                    return 0
+                else:
+                    return -2
+            except Exception, ex:
+                traceback.print_exc()
+                return -1 # some error in python code.
+        return 0 # no such define
+
+    cpdef int index_finished(self):
+        if attr_callable(self._pysource, 'indexFinished'):
+            try:
+                ret = self._pysource.indexFinished()
                 if ret or ret == None:
                     return 0
                 else:

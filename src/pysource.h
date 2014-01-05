@@ -81,7 +81,7 @@ public:
 
     /// post-index callback
     /// gets called when the indexing is succesfully (!) over
-    // virtual void						PostIndex () {}
+    virtual void						PostIndex ();
 
 public:
     /// field data getter

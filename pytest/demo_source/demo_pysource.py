@@ -59,7 +59,10 @@ class TestSource(object):
 		self.field2id["title"] =  schema.addField("title")		
 		self.field2id["body"] =  schema.addField("body")
 
-		#schema.addField("comments", bJoin = True)		
+		schema.done() #notify system, all attribute & fields are add.
+
+		#print self.field2id
+		#print schema.addField("comments", bJoin = True)	, '-----'	
 
 		#print schema, source_conf
 		#print schema.fieldsCount(), schema.attributeCount()
