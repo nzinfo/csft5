@@ -59,7 +59,7 @@ public:
     /// returns false and fills out-string with error message on failure
     /// returns true and sets m_tDocInfo.m_uDocID to 0 on eof
     /// returns true and sets m_tDocInfo.m_uDocID to non-0 on success ->...?
-    // virtual ISphHits *					IterateJoinedHits ( CSphString & sError );
+    virtual ISphHits *					IterateJoinedHits ( CSphString & sError );
 
     /// begin iterating values of out-of-document multi-valued attribute iAttr
     /// will fail if iAttr is out of range, or is not multi-valued

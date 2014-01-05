@@ -139,7 +139,17 @@ bool CSphSource_Python2::IterateStart ( CSphString & sError ) {
 /// returns false and fills out-string with error message on failure
 /// returns true and sets m_tDocInfo.m_uDocID to 0 on eof
 /// returns true and sets m_tDocInfo.m_uDocID to non-0 on success ->...?
-// virtual ISphHits *					IterateJoinedHits ( CSphString & sError );
+ISphHits *	CSphSource_Python2::IterateJoinedHits ( CSphString & sError ){
+#if PYSOURCE_DEBUG
+    fprintf(stderr, "[DEBUG][PYSOURCE] IterateJoinedHits .\n");
+#endif
+
+    m_tHits.m_dData.Resize ( 0 );
+
+    static ISphHits dDummy;
+    m_tDocInfo.m_iDocID = 0; // pretend that's an eof
+    return &dDummy;
+}
 
 /// begin iterating values of out-of-document multi-valued attribute iAttr
 /// will fail if iAttr is out of range, or is not multi-valued
@@ -188,7 +198,7 @@ bool CSphSource_Python2::IterateMultivaluedNext () {
     if( py_source_get_join_mva(_obj, tAttr.m_sName.cstr(), &docid, &v) == 0){
         if(!docid)
             return false;
-        printf("doc %lld\t v %lld\n", docid, v);
+        //printf("doc %lld\t v %lld\n", docid, v);
         m_tDocInfo.m_iDocID = (SphDocID_t)docid;
         if ( tAttr.m_eAttrType==SPH_ATTR_UINT32SET )
             m_dMva.Add ( (DWORD) v );
@@ -204,6 +214,9 @@ bool CSphSource_Python2::IterateKillListStart ( CSphString & sError ) {
 #if PYSOURCE_DEBUG
     fprintf(stderr, "[DEBUG][PYSOURCE] IterateKillListStart .\n");
 #endif
+    if( py_source_get_kill_list(_obj) == 0){
+        return true;
+    }
     return false;
 }
 
@@ -212,6 +225,12 @@ bool CSphSource_Python2::IterateKillListNext ( SphDocID_t & tDocId ) {
 #if PYSOURCE_DEBUG
     fprintf(stderr, "[DEBUG][PYSOURCE] IterateKillListNext .\n");
 #endif
+    uint64_t docid = 0;
+    if( py_source_get_kill_list_item(_obj, &docid) == 0){
+        //printf("kdocid %lld.\n", docid);
+        tDocId = docid;
+        return true;
+    }
     return false;
 }
 

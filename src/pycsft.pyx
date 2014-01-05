@@ -424,12 +424,17 @@ cdef class PySourceWrap(object):
     cdef PyDocInfo _docInfo
     cdef PyHitCollector _hitCollecotr
     cdef CSphSource_Python2* _csrc
+    # kill list related.
+    cdef list _killList
+    cdef int  _killListPos
 
     def __init__(self, pysrc):
         self._pysource = pysrc
         self._docInfo = PyDocInfo()
         self._hitCollecotr = PyHitCollector()
         self._csrc = NULL
+        self._killList = None
+        self._killListPos = 0
 
     cdef bindSource(self, CSphSource_Python2* pSource):
         """
@@ -532,9 +537,9 @@ cdef class PySourceWrap(object):
 
     cpdef getJoinMva(self, attrName):
         # programal optional, if has list-query , the method must define.
-        if attr_callable(self._pysource, 'feedMultiValueAttribute'):
+        if attr_callable(self._pysource, 'getMultiValueAttribute'):
             try:
-                ret = self._pysource.feedMultiValueAttribute(attrName)
+                ret = self._pysource.getMultiValueAttribute(attrName)
                 if ret:
                     return ret
                 else:
@@ -557,9 +562,12 @@ cdef class PySourceWrap(object):
 
     cpdef int getKillList(self):
         # optinal call back.
-        if attr_callable(self._pysource, 'feedKillList'):
+        if attr_callable(self._pysource, 'getKillList'):
             try:
-                if self._pysource.feedKillList():
+                klist = self._pysource.getKillList()
+                if klist or klist == None:
+                    self._killList = klist if klist else []
+                    self._killListPos = 0
                     return 0
                 else:
                     return -2
@@ -567,6 +575,16 @@ cdef class PySourceWrap(object):
                 traceback.print_exc()
                 return -1 # some error in python code.
         return 0 # no such define
+
+    cdef int getKillListItem(self, uint64_t* opDocID):
+        if self._killListPos >= len(self._killList):
+            return -1
+
+        if opDocID:
+            opDocID[0] = self._killList[self._killListPos]
+
+        self._killListPos += 1
+        return 0
 
 ## --- python tokenizer ---
 
@@ -680,6 +698,10 @@ cdef public int py_source_after_index(void *ptr, bool bNormalExit):
 cdef public int py_source_get_kill_list(void *ptr):
     cdef PySourceWrap self = <PySourceWrap>(ptr)
     return self.getKillList()
+
+cdef public int py_source_get_kill_list_item(void *ptr, uint64_t* opDocID):
+    cdef PySourceWrap self = <PySourceWrap>(ptr)
+    return self.getKillListItem(opDocID)
 
 # - [Removed] GetFieldOrder -> 在 buildSchema 统一处理
 # - [Removed] BuildHits -> 有 TokenPolicy 模块处理

@@ -115,24 +115,24 @@ class TestSource(object):
 		pass
 
 	# no hit_collector in mva , for dHits is reused in building mva values.
-	def feedMultiValueAttribute(self, fieldname):
+	def getMultiValueAttribute(self, fieldname):
 		print 'pysource, feedMultiValueAttribute' # return (docid, val)
 		if fieldname == 'tag':
 			if self._itag < len(join_docs):
 				v = ( join_docs[self._itag]['id'] ,  join_docs[self._itag]['tag'] ) 
 				self._itag += 1
 				return v
-				
+
 		if fieldname == 'tag2':
 			if self._itagL < len(join_docs):
 				v = ( join_docs[self._itagL]['id'] ,  join_docs[self._itagL]['tag2'] ) 
 				self._itagL += 1
 				return v
 
-	def feedKillList(self):
+	def getKillList(self):
 		# 参数待定
 		print 'pysource, feedKillList'
-		pass
+		return [ 105, 1000 ]
 
 	"""
 		与数据连接有关的接口
