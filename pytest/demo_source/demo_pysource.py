@@ -71,6 +71,7 @@ class TestSource(object):
 		self.prev_mva = None
 		self._itag = 0
 		self._itagL = 0
+
 	"""
 		配置 索引的 字段信息
 	"""
@@ -128,6 +129,20 @@ class TestSource(object):
 			- 因此，在 C++ 部分，就不再额外需要跟踪 m_iJoinedHitPositions 了
 		"""
 		print field_name, docinfo, hit_collector
+		if True:
+			# 一次处理一个全文字段
+			if field_name == 'comments':
+				if self._itag < len(join_fields):
+					docinfo.setDocID(join_fields[self._itag]['id'])
+					docinfo.setField(self.field2id["comments"], join_fields[self._itag]['comments'])
+					docinfo.setField(self.field2id["tasks"], join_fields[self._itag]['tasks'])
+					self._itag += 1
+					return
+			pass
+		else:
+			# 一次处理多个全文字段
+			pass
+
 		#docinfo.setDocID(doc['id'])
 		#docinfo.setField(self.field2id["comments"], doc['title'])
 		#docinfo.setField(self.field2id["tasks"], doc['title'])
@@ -178,6 +193,9 @@ class TestSource(object):
 		self.field2id["tasks"] = schema.addField("tasks", bJoin = True)	# 测试 multi join fields, useing @tasks ...
 
 		schema.done() #notify system, all attribute & fields are add.
+
+		self._itag = 0
+		self._itagL = 0
 
 		#print schema, source_conf
 		#print schema.fieldsCount(), schema.attributeCount()

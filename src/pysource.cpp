@@ -174,8 +174,68 @@ ISphHits *	CSphSource_Python2::IterateJoinedHits ( CSphString & sError ){
     while ( m_iJoinedHitField < m_tSchema.m_dFields.GetLength() )
     {
         const CSphColumnInfo & tAttr = m_tSchema.m_dFields[m_iJoinedHitField];
-        py_source_get_join_field(_obj, tAttr.m_sName.cstr());
-        break;
+        while(true) {
+            // set data & fields here.
+            memset(m_dFields,0,sizeof(m_dFields));
+            m_tDocInfo.m_iDocID = 0;
+            if (py_source_get_join_field(_obj, tAttr.m_sName.cstr()) != 0)
+                return NULL; //has error in script
+            if(m_tDocInfo.m_iDocID == 0)
+                break; // no more data @this_field.
+
+            //FIXME: check memory usage,
+
+            // lets skip joined document totally if there was no such document ID returned by main query
+            if ( !m_dAllIds.BinarySearch ( m_tDocInfo.m_iDocID ) )
+                continue;
+
+            // field start? restart ids
+            if ( !m_iJoinedHitID )
+                m_iJoinedHitID = m_tDocInfo.m_iDocID;
+
+            // docid asc requirement violated? report an error
+            if ( m_iJoinedHitID>m_tDocInfo.m_iDocID )
+            {
+                sError.SetSprintf ( "joined field '%s': query MUST return document IDs in ASC order",
+                    m_tSchema.m_dFields[m_iJoinedHitField].m_sName.cstr() );
+                return NULL;
+            }
+
+            // next document? update tracker, reset position
+            if ( m_iJoinedHitID<m_tDocInfo.m_iDocID )
+            {
+                m_iJoinedHitID = m_tDocInfo.m_iDocID;
+                //memset(m_iJoinedHitPositions, 0, sizeof(m_iJoinedHitPositions) );
+                //m_iJoinedHitPos = 0;
+            }
+
+            if ( !m_tState.m_bProcessingHits )
+            {
+                m_tState = CSphBuildHitsState_t();
+                m_tState.m_iField = m_iJoinedHitField;
+                m_tState.m_iStartField = 0; //m_iJoinedHitField;
+                // we scan all join fields
+                m_tState.m_iEndField =  m_tSchema.m_dFields.GetLength(); //m_iJoinedHitField+1;
+                m_tState.m_iStartPos = 0;
+            }
+
+            // build those hits
+            m_tState.m_dFields = m_dFields;
+            while ( true ) {
+                BuildHits ( sError, true );
+                if ( m_tState.m_bProcessingHits )
+                    continue;
+                break;
+            }
+        }
+
+        m_iJoinedHitID = 0;
+        m_iJoinedHitField ++; //next field.
+    }
+    if ( m_iJoinedHitField>=m_tSchema.m_dFields.GetLength() )
+    {
+        m_tDocInfo.m_iDocID = ( m_tHits.Length() ? 1 : 0 ); // to eof or not to eof
+        return &m_tHits;
     }
     return &m_tHits;
 }
