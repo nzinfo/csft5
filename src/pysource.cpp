@@ -175,15 +175,16 @@ ISphHits *	CSphSource_Python2::IterateJoinedHits ( CSphString & sError ){
     {
         const CSphColumnInfo & tAttr = m_tSchema.m_dFields[m_iJoinedHitField];
         while(true) {
+            //FIXME: check memory usage, if m_tHits.Length() > XXX
+            {}
+
             // set data & fields here.
             memset(m_dFields,0,sizeof(m_dFields));
             m_tDocInfo.m_iDocID = 0;
             if (py_source_get_join_field(_obj, tAttr.m_sName.cstr()) != 0)
                 return NULL; //has error in script
             if(m_tDocInfo.m_iDocID == 0)
-                break; // no more data @this_field.
-
-            //FIXME: check memory usage,
+                break; // no more data @this_field.            
 
             // lets skip joined document totally if there was no such document ID returned by main query
             if ( !m_dAllIds.BinarySearch ( m_tDocInfo.m_iDocID ) )
