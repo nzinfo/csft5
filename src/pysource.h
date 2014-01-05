@@ -91,6 +91,12 @@ public:
 protected:
     BYTE *          m_dFields [ SPH_MAX_FIELDS ];
     int             m_iMultiAttr;
+
+    //handle sql_join.
+    int					m_iJoinedHitField;	///< currently pulling joined hits from this field (index into schema; -1 if not pulling)
+    SphDocID_t			m_iJoinedHitID;		///< last document id
+    int					m_iJoinedHitPositions[ SPH_MAX_FIELDS ];	///< last hit position
+
 protected:
     CSphString		m_sError;
     bool          _bAttributeConfigured;

@@ -531,11 +531,19 @@ cdef class PySourceWrap(object):
                 return -1 # some error in python code.
         return 0 # no such define
 
-    cpdef int getJoinField(self):
+    cpdef int getJoinField(self, const char* attrName):
         # programal optional, if has join field , the method must define.
+        if attr_callable(self._pysource, 'feedJoinField'):
+            try:
+                ret = self._pysource.feedJoinField(attrName, self._docInfo, self._hitCollecotr)
+                if ret or ret == None:
+                    return 0
+            except Exception, ex:
+                traceback.print_exc()
+                return -1 # some error in python code.
         return 0
 
-    cpdef getJoinMva(self, attrName):
+    cpdef getJoinMva(self, const char* attrName):
         # programal optional, if has list-query , the method must define.
         if attr_callable(self._pysource, 'getMultiValueAttribute'):
             try:
@@ -672,7 +680,7 @@ cdef public int py_source_before_index(void *ptr):
 # - GetDocField
 cdef public int py_source_get_join_field(void *ptr, const char* fieldname):
     cdef PySourceWrap self = <PySourceWrap>(ptr)
-    return self.getJoinField()
+    return self.getJoinField(fieldname)
 
 # - GetMVAValue
 cdef public int py_source_get_join_mva(void *ptr, const char* fieldname, uint64_t* opDocID, int64_t* opVal):

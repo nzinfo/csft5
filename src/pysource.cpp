@@ -9,6 +9,7 @@
 CSphSource_Python2::CSphSource_Python2 ( const char * sName, PyObject *obj)
             : CSphSource_Document ( sName )
             , m_iMultiAttr(0)
+            , m_iJoinedHitID(0)
             , _bAttributeConfigured(false)
             , _obj(obj)
 {
@@ -16,6 +17,9 @@ CSphSource_Python2::CSphSource_Python2 ( const char * sName, PyObject *obj)
     assert(sizeof(uint64_t) >= sizeof(SphDocID_t));
 
     Py_INCREF(_obj); // hold the referenct, it doesn't hurt.
+
+    memset(m_iJoinedHitPositions,0,sizeof(m_iJoinedHitPositions));
+
 #if PYSOURCE_DEBUG
     fprintf(stderr, "[DEBUG][PYSOURCE] Init source '%s'.\n", sName);
 #endif
@@ -75,6 +79,10 @@ bool CSphSource_Python2::Connect ( CSphString & sError ) {
     ARRAY_FOREACH ( i, m_tSchema.m_dFields ) {
         if(m_tSchema.m_dFields[i].m_iIndex!=-1)
             m_iPlainFieldsLength ++;
+        else {
+            m_iJoinedHitField = i;
+            break;
+        }
     }
     // check it
     if ( m_tSchema.m_dFields.GetLength()>SPH_MAX_FIELDS )
@@ -144,11 +152,32 @@ ISphHits *	CSphSource_Python2::IterateJoinedHits ( CSphString & sError ){
     fprintf(stderr, "[DEBUG][PYSOURCE] IterateJoinedHits .\n");
 #endif
 
+    if ( !m_bIdsSorted )
+    {
+        m_dAllIds.Uniq();
+        m_bIdsSorted = true;
+    }
+
     m_tHits.m_dData.Resize ( 0 );
 
-    static ISphHits dDummy;
-    m_tDocInfo.m_iDocID = 0; // pretend that's an eof
-    return &dDummy;
+    // eof check
+    if ( m_iJoinedHitField>=m_tSchema.m_dFields.GetLength() )
+    {
+        m_tDocInfo.m_iDocID = 0;
+        return &m_tHits;
+    }
+
+    /*
+     *  遍历全部 join field; 读取  Python 设置的值
+     */
+
+    while ( m_iJoinedHitField < m_tSchema.m_dFields.GetLength() )
+    {
+        const CSphColumnInfo & tAttr = m_tSchema.m_dFields[m_iJoinedHitField];
+        py_source_get_join_field(_obj, tAttr.m_sName.cstr());
+        break;
+    }
+    return &m_tHits;
 }
 
 /// begin iterating values of out-of-document multi-valued attribute iAttr

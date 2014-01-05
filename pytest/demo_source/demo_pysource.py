@@ -45,6 +45,19 @@ join_docs = [
 	}
 ]
 
+join_fields = [
+	{
+		'id': 100,
+		'comments': "tag1 111",
+		'tasks': "tasks uuu "
+	},
+	{
+		'id': 101,
+		'comments': "tag2 111",
+		'tasks': "tasks1 ddd"
+	},
+]
+
 class TestSource(object):
 	"""测试使用的 Python 数据源"""
 	def __init__(self):
@@ -109,7 +122,15 @@ class TestSource(object):
 		self.idx += 1
 		return True
 
-	def feedJoinField(self, docinfo, hit_collector):
+	def feedJoinField(self, field_name, docinfo, hit_collector):
+		"""
+			与之前的 JoinField 不同，这里 一个 docid 的 一个字段只能被设置一次 （其实连续设置没问题，但 Pos 计算会错）。
+			- 因此，在 C++ 部分，就不再额外需要跟踪 m_iJoinedHitPositions 了
+		"""
+		print field_name, docinfo, hit_collector
+		#docinfo.setDocID(doc['id'])
+		#docinfo.setField(self.field2id["comments"], doc['title'])
+		#docinfo.setField(self.field2id["tasks"], doc['title'])
 		# fieldname => the code knows which is the joint field. -> IterateJoinedHits
 		print 'pysource, feedJoinField'
 		pass
@@ -153,8 +174,8 @@ class TestSource(object):
 		self.field2id["body"] =  schema.addField("body")
 
 		#print self.field2id
-		schema.addField("comments", bJoin = True)	
-		schema.addField("tasks", bJoin = True)	# 测试 multi join fields, useing @tasks ...
+		self.field2id["comments"] = schema.addField("comments", bJoin = True)	
+		self.field2id["tasks"] = schema.addField("tasks", bJoin = True)	# 测试 multi join fields, useing @tasks ...
 
 		schema.done() #notify system, all attribute & fields are add.
 
