@@ -183,13 +183,15 @@ bool CSphSource_Python2::IterateMultivaluedNext () {
     int64_t v = 0;
     const CSphColumnInfo & tAttr = m_tSchema.GetAttr(m_iMultiAttr);
 
+    m_dMva.Resize ( 0 );
+
     if( py_source_get_join_mva(_obj, tAttr.m_sName.cstr(), &docid, &v) == 0){
         if(!docid)
             return false;
-
+        printf("doc %lld\t v %lld\n", docid, v);
         m_tDocInfo.m_iDocID = (SphDocID_t)docid;
         if ( tAttr.m_eAttrType==SPH_ATTR_UINT32SET )
-            m_dMva.Add ( (DWORD)v );
+            m_dMva.Add ( (DWORD) v );
         else
             sphAddMva64 ( m_dMva, v );
         return true;

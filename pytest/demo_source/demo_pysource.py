@@ -55,6 +55,9 @@ class TestSource(object):
 		self.attr2id = {}
 		self.field2id = {}
 
+		self.prev_mva = None
+		self._itag = 0
+		self._itagL = 0
 	"""
 		配置 索引的 字段信息
 	"""
@@ -114,8 +117,17 @@ class TestSource(object):
 	# no hit_collector in mva , for dHits is reused in building mva values.
 	def feedMultiValueAttribute(self, fieldname):
 		print 'pysource, feedMultiValueAttribute' # return (docid, val)
-		print fieldname, '------'
-		pass
+		if fieldname == 'tag':
+			if self._itag < len(join_docs):
+				v = ( join_docs[self._itag]['id'] ,  join_docs[self._itag]['tag'] ) 
+				self._itag += 1
+				return v
+				
+		if fieldname == 'tag2':
+			if self._itagL < len(join_docs):
+				v = ( join_docs[self._itagL]['id'] ,  join_docs[self._itagL]['tag2'] ) 
+				self._itagL += 1
+				return v
 
 	def feedKillList(self):
 		# 参数待定
