@@ -40,40 +40,12 @@ class TestSource(object):
 	"""
 		配置 索引的 字段信息
 	"""
-	def setup(self, schema, source_conf):
+	def setup(self, source_conf):
 		"""
 			在 Python Source2 中， 使用 Setup 方法定义索引， 通过调用 schema 的成员变量添加新函数；
 			source_conf 是 python 的 dict 对象， 记录了由配置文件提供的 数据源信息；
-			@schema 		PySchemaWrap 
 			@source_conf 	Dictionary
 		"""
-		self.attr2id["create_at"] = schema.addAttribute("create_at", "timestamp", 0, False, False)
-		#attr2id["tag"] = 
-		#schema.addAttribute("tag", "integer", 0, bJoin=True, bIsSet=True)
-		
-		self.attr2id["oid"] = schema.addAttribute("oid", "long")
-		self.attr2id["title"] = schema.addAttribute("title", "string")
-		self.attr2id["bigtag"] =  schema.addAttribute("bigtag", "long", bIsSet = True)
-
-
-		self.field2id["title"] =  schema.addField("title")		
-		self.field2id["body"] =  schema.addField("body")
-
-		schema.done() #notify system, all attribute & fields are add.
-
-		#print self.field2id
-		#print schema.addField("comments", bJoin = True)	, '-----'	
-
-		#print schema, source_conf
-		#print schema.fieldsCount(), schema.attributeCount()
-		#print schema.fieldsInfo(1), schema.attributeInfo(1)
-		# build attr -> id map
-		if True:
-			for i in range(0, schema.fieldsCount()):
-				print i,  schema.fieldsInfo(i)
-			for i in range(0, schema.attributeCount()):
-				print i,  schema.attributeInfo(i)
-		
 		print 'pysource, setup called'
 		return True
 		#return False
@@ -121,7 +93,8 @@ class TestSource(object):
 		print 'pysource, feedJoinField'
 		pass
 
-	def feedMultiValueAttribute(self, fieldname, docinfo, hit_collector):
+	# no hit_collector in mva , for dHits is reused in building mva values.
+	def feedMultiValueAttribute(self, fieldname):
 		print 'pysource, feedMultiValueAttribute'
 		pass
 
@@ -133,7 +106,37 @@ class TestSource(object):
 	"""
 		与数据连接有关的接口
 	"""
-	def connect(self):
+	def connect(self, schema):
+
+		self.attr2id["create_at"] = schema.addAttribute("create_at", "timestamp", 0, False, False)
+		#attr2id["tag"] = 
+		schema.addAttribute("tag", "integer", 0, bJoin=True, bIsSet=True)
+		schema.addAttribute("tag2", "long", 0, bJoin=True, bIsSet=True) # 测试 bigint MVA & multi join MVA
+		
+		self.attr2id["oid"] = schema.addAttribute("oid", "long")
+		self.attr2id["title"] = schema.addAttribute("title", "string")
+		self.attr2id["bigtag"] =  schema.addAttribute("bigtag", "long", bIsSet = True)
+
+
+		self.field2id["title"] =  schema.addField("title")		
+		self.field2id["body"] =  schema.addField("body")
+
+		#print self.field2id
+		schema.addField("comments", bJoin = True)	
+		schema.addField("tasks", bJoin = True)	# 测试 multi join fields, useing @tasks ...
+
+		schema.done() #notify system, all attribute & fields are add.
+
+		#print schema, source_conf
+		#print schema.fieldsCount(), schema.attributeCount()
+		#print schema.fieldsInfo(1), schema.attributeInfo(1)
+		# build attr -> id map
+		if True:
+			for i in range(0, schema.fieldsCount()):
+				print i,  schema.fieldsInfo(i)
+			for i in range(0, schema.attributeCount()):
+				print i,  schema.attributeInfo(i)
+
 		print 'pysource, Connect'
 		return True
 

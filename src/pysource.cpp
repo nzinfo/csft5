@@ -41,7 +41,7 @@ bool CSphSource_Python2::Setup ( const CSphConfigSection & hSource){
 #if PYSOURCE_DEBUG
     fprintf(stderr, "[DEBUG][PYSOURCE] Setup .\n");
 #endif
-    int nRet = py_source_setup(_obj, m_tSchema, hSource);
+    int nRet = py_source_setup(_obj, hSource);
     _bAttributeConfigured =  (nRet == 0);
     // TODO: check the error code.
     {
@@ -63,7 +63,7 @@ bool CSphSource_Python2::Connect ( CSphString & sError ) {
 #endif
     // update capablity of m_tHits
     // call pysource connect
-    if(py_source_connected(_obj) != 0)
+    if(py_source_connected(_obj, m_tSchema) != 0)
         return false;
 
     // init schema storage.
@@ -88,7 +88,7 @@ void CSphSource_Python2::Disconnect () {
 #if PYSOURCE_DEBUG
     fprintf(stderr, "[DEBUG][PYSOURCE] Disconnect .\n");
 #endif
-    m_tSchema.Reset ();
+    m_tSchema.Reset ();  //reset m_tSchema is unecessary, and will cause bugs when deal join fields.
     m_tHits.m_dData.Reset();
     // notify python ?
 }
@@ -148,10 +148,12 @@ bool CSphSource_Python2::IterateMultivaluedStart ( int iAttr, CSphString & sErro
 #if PYSOURCE_DEBUG
     fprintf(stderr, "[DEBUG][PYSOURCE] IterateMultivaluedStart .\n");
 #endif
+    printf("begin mva %d , %d.\n", iAttr, m_tSchema.GetAttrsCount() );
     if ( iAttr<0 || iAttr>=m_tSchema.GetAttrsCount() )
         return false;
 
     const CSphColumnInfo & tAttr = m_tSchema.GetAttr(iAttr);
+    printf("%s ---> %d, %d\n", tAttr.m_sName.cstr(), 1, tAttr.m_eSrc == SPH_ATTRSRC_QUERY);
     if ( !(tAttr.m_eAttrType==SPH_ATTR_UINT32SET || tAttr.m_eAttrType==SPH_ATTR_INT64SET ) )
         return false;
     switch ( tAttr.m_eSrc )
@@ -161,6 +163,7 @@ bool CSphSource_Python2::IterateMultivaluedStart ( int iAttr, CSphString & sErro
     case SPH_ATTRSRC_QUERY:
         {
             //FIXME: should check feedMultiValueAttribute existance.
+            //printf("---------------");
             return true;
         }
     default:
@@ -237,10 +240,6 @@ BYTE ** CSphSource_Python2::NextDocument ( CSphString & sError ) {
         // check attribute
         // check MVA field (embed listed mva)
         // check fields. -> in pysource v1 , this job has taken in CSphSource_Python::SetAttr( int iIndex, PyObject* v)
-    }
-    {
-        // debug usage.
-        printf("%s\t%s\t\n", m_dFields[0], m_dFields[1]);
     }
     return m_dFields;
 }

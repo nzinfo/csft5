@@ -247,6 +247,7 @@ cdef class PySchemaWrap(object):
             tCol.m_iIndex = -1
             tCol.m_bIndexed = True
             addFieldColumn(self._schema, tCol)
+        self._join_fields = []
 
     cpdef int addAttribute(self, const char* sName, const char* sType, int iBitSize=0, bool bJoin=False, bool bIsSet=False):
         """
@@ -438,17 +439,13 @@ cdef class PySourceWrap(object):
         self._csrc = pSource;
         #printf("cpp source: %p\n", pSource)
 
-    cpdef int setup(self, schema, source_conf):
+    cpdef int setup(self, source_conf):
         try:
-            ret = self._pysource.setup(schema, source_conf)
+            ret = self._pysource.setup(source_conf)
             if ret or ret == None:
                 #check obj has necessary method.
                 if not attr_callable(self._pysource, 'feed'):
                     return -2
-
-                #bind source.
-                self._docInfo.bind(self._csrc, &(self._csrc.m_tDocInfo) )
-                self._hitCollecotr.bind(self._csrc.getHits())
 
                 return 0
         except Exception, ex:
@@ -457,12 +454,15 @@ cdef class PySourceWrap(object):
 
         return -100 # some error happen
 
-    cpdef int connect(self):
+    cpdef int connect(self, schema):
         # check have the function
         if attr_callable(self._pysource, 'connect'):
             try:
-                ret = self._pysource.connect()
+                ret = self._pysource.connect(schema)
                 if ret or ret == None:
+                    #bind source.
+                    self._docInfo.bind(self._csrc, &(self._csrc.m_tDocInfo) )
+                    self._hitCollecotr.bind(self._csrc.getHits())
                     return 0
                 else:
                     return -2
@@ -587,7 +587,7 @@ cdef class PySourceWrap(object):
 
 ## --- python source ---
 # 处理配置文件的读取, 读取 配置到  key -> value; key-> valuelist.
-cdef public int py_source_setup(void *ptr, CSphSchema& Schema, const CSphConfigSection & hSource):
+cdef public int py_source_setup(void *ptr, const CSphConfigSection & hSource):
     cdef const char* key
     cdef CSphStringList values
     cdef uint32_t value_count
@@ -610,10 +610,8 @@ cdef public int py_source_setup(void *ptr, CSphSchema& Schema, const CSphConfigS
             v.append( values[i].cstr() )
         conf_items[key] = v
 
-    pySchema = PySchemaWrap()
-    pySchema.bind(&Schema)
     # call wrap
-    return self.setup(pySchema, conf_items)
+    return self.setup(conf_items)
 
     # temp usage for crc32 key ------->
     if False:
@@ -627,9 +625,11 @@ cdef public int py_source_setup(void *ptr, CSphSchema& Schema, const CSphConfigS
 #    pass
 
 # - Connected
-cdef public int py_source_connected(void *ptr):
+cdef public int py_source_connected(void *ptr, CSphSchema& Schema):
     cdef PySourceWrap self = <PySourceWrap>(ptr)
-    return self.connect()
+    pySchema = PySchemaWrap()
+    pySchema.bind(&Schema)
+    return self.connect(pySchema)
 
 # - OnIndexFinished
 cdef public int py_source_index_finished(void *ptr):
