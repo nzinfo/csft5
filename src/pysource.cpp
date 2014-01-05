@@ -8,6 +8,7 @@
 
 CSphSource_Python2::CSphSource_Python2 ( const char * sName, PyObject *obj)
             : CSphSource_Document ( sName )
+            , m_iMultiAttr(0)
             , _bAttributeConfigured(false)
             , _obj(obj)
 {
@@ -148,12 +149,12 @@ bool CSphSource_Python2::IterateMultivaluedStart ( int iAttr, CSphString & sErro
 #if PYSOURCE_DEBUG
     fprintf(stderr, "[DEBUG][PYSOURCE] IterateMultivaluedStart .\n");
 #endif
-    printf("begin mva %d , %d.\n", iAttr, m_tSchema.GetAttrsCount() );
+    // printf("begin mva %d , %d.\n", iAttr, m_tSchema.GetAttrsCount() );
     if ( iAttr<0 || iAttr>=m_tSchema.GetAttrsCount() )
         return false;
 
     const CSphColumnInfo & tAttr = m_tSchema.GetAttr(iAttr);
-    printf("%s ---> %d, %d\n", tAttr.m_sName.cstr(), 1, tAttr.m_eSrc == SPH_ATTRSRC_QUERY);
+    // printf("%s ---> %d, %d\n", tAttr.m_sName.cstr(), 1, tAttr.m_eSrc == SPH_ATTRSRC_QUERY);
     if ( !(tAttr.m_eAttrType==SPH_ATTR_UINT32SET || tAttr.m_eAttrType==SPH_ATTR_INT64SET ) )
         return false;
     switch ( tAttr.m_eSrc )
@@ -164,6 +165,7 @@ bool CSphSource_Python2::IterateMultivaluedStart ( int iAttr, CSphString & sErro
         {
             //FIXME: should check feedMultiValueAttribute existance.
             //printf("---------------");
+            m_iMultiAttr = iAttr;
             return true;
         }
     default:
@@ -177,7 +179,22 @@ bool CSphSource_Python2::IterateMultivaluedNext () {
 #if PYSOURCE_DEBUG
     fprintf(stderr, "[DEBUG][PYSOURCE] IterateMultivaluedNext .\n");
 #endif
-    return false;
+    uint64_t docid = 0;
+    int64_t v = 0;
+    const CSphColumnInfo & tAttr = m_tSchema.GetAttr(m_iMultiAttr);
+
+    if( py_source_get_join_mva(_obj, tAttr.m_sName.cstr(), &docid, &v) == 0){
+        if(!docid)
+            return false;
+
+        m_tDocInfo.m_iDocID = (SphDocID_t)docid;
+        if ( tAttr.m_eAttrType==SPH_ATTR_UINT32SET )
+            m_dMva.Add ( (DWORD)v );
+        else
+            sphAddMva64 ( m_dMva, v );
+        return true;
+    }else
+        return false;
 }
 
 /// begin iterating kill list

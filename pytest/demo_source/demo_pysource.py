@@ -27,6 +27,24 @@ documents = [
 	}
 ]
 
+join_docs = [
+	{
+		'id': 100,
+		'tag': 1,
+		'tag2': 100000000001L
+	},
+	{
+		'id': 100,
+		'tag': 2,
+		'tag2': 100000000002L
+	},
+	{
+		'id': 101,
+		'tag': 1,
+		'tag2': 100000000001L
+	}
+]
+
 class TestSource(object):
 	"""测试使用的 Python 数据源"""
 	def __init__(self):
@@ -95,7 +113,8 @@ class TestSource(object):
 
 	# no hit_collector in mva , for dHits is reused in building mva values.
 	def feedMultiValueAttribute(self, fieldname):
-		print 'pysource, feedMultiValueAttribute'
+		print 'pysource, feedMultiValueAttribute' # return (docid, val)
+		print fieldname, '------'
 		pass
 
 	def feedKillList(self):

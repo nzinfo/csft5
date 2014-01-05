@@ -90,11 +90,12 @@ public:
 
 protected:
     BYTE *          m_dFields [ SPH_MAX_FIELDS ];
-
+    int             m_iMultiAttr;
 protected:
     CSphString		m_sError;
     bool          _bAttributeConfigured;
     PyObject    * _obj;
+
 };
 
 #endif // PYSOURCE_H
